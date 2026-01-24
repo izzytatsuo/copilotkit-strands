@@ -9,7 +9,14 @@ This example demonstrates a Strands agent integrated with AG-UI, featuring:
 
 import json
 import os
+import sys
 from typing import List
+
+# Fix Windows console encoding for Unicode characters (emojis like ✅)
+if sys.stdout:
+    sys.stdout.reconfigure(encoding='utf-8')
+if sys.stderr:
+    sys.stderr.reconfigure(encoding='utf-8')
 
 from ag_ui_strands import (
     StrandsAgent,
