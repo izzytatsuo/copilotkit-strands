@@ -13,10 +13,17 @@ import sys
 from typing import List
 
 # Fix Windows console encoding for Unicode characters (emojis like ✅)
-if sys.stdout:
-    sys.stdout.reconfigure(encoding='utf-8')
-if sys.stderr:
-    sys.stderr.reconfigure(encoding='utf-8')
+# Use errors='replace' to substitute unsupported characters instead of crashing
+if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
 
 from ag_ui_strands import (
     StrandsAgent,
