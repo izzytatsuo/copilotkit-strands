@@ -39,10 +39,21 @@ from strands.models.openai import OpenAIModel
 from strands.models import BedrockModel
 
 # ETL tool imports
-from tools.duckdb_etl import DuckDBETL
+from tools.duckdb_etl import DuckDBETL, _make_boto3_session
 from tools.batch_http import batch_http_request, list_sessions, get_session_info
 from tools.run_process import run_process
 from tools.sim_data import SIMData
+
+# Strands AWS tool — patch to use project-local credentials
+import strands_tools.use_aws as _use_aws_mod
+_orig_get_boto3_client = _use_aws_mod.get_boto3_client
+def _patched_get_boto3_client(service_name, region_name, profile_name=None):
+    from botocore.config import Config as BotocoreConfig
+    session = _make_boto3_session(profile_name=profile_name)
+    config = BotocoreConfig(user_agent_extra="strands-agents-use-aws")
+    return session.client(service_name=service_name, region_name=region_name, config=config)
+_use_aws_mod.get_boto3_client = _patched_get_boto3_client
+from strands_tools import use_aws
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', 'env', '.env'))
 
@@ -220,6 +231,8 @@ strands_agent = Agent(
         sim_provider.fetch_sim_by_ids,
         sim_provider.create_sim,
         sim_provider.check_sim_status,
+        # AWS tool
+        use_aws,
     ],
 )
 
