@@ -6,16 +6,35 @@ import subprocess
 import boto3
 from pathlib import Path
 
-# AWS credentials: env var > project-local default
-_aws_creds_env = os.environ.get("AWS_CREDENTIALS_PATH")
-if _aws_creds_env:
-    os.environ["AWS_SHARED_CREDENTIALS_FILE"] = str(Path(_aws_creds_env).expanduser())
-else:
-    _aws_creds_path = Path(__file__).parent.parent / "aws" / "credentials"
-    if _aws_creds_path.exists():
-        os.environ.setdefault("AWS_SHARED_CREDENTIALS_FILE", str(_aws_creds_path))
+from botocore.session import Session as BotocoreSession
 
 from tools.udfs import register_all as register_udfs, set_cookie_path as set_udf_cookie_path
+
+
+def _get_aws_credentials_file() -> Optional[str]:
+    """Resolve AWS credentials file path: env var > project-local > None (default chain)."""
+    env_path = os.environ.get("AWS_CREDENTIALS_PATH")
+    if env_path:
+        p = Path(env_path).expanduser()
+        if p.exists():
+            return str(p)
+    project_path = Path(__file__).parent.parent / "aws" / "credentials"
+    if project_path.exists():
+        return str(project_path)
+    return None
+
+
+def _make_boto3_session(profile_name: Optional[str] = None) -> boto3.Session:
+    """Create a boto3 session using project-local credentials without polluting global env."""
+    creds_file = _get_aws_credentials_file()
+    if creds_file:
+        # Use botocore to set credentials file on this session only
+        botocore_session = BotocoreSession()
+        botocore_session.set_config_variable("credentials_file", creds_file)
+        if profile_name:
+            botocore_session.set_config_variable("profile", profile_name)
+        return boto3.Session(botocore_session=botocore_session)
+    return boto3.Session(profile_name=profile_name)
 
 
 class DuckDBETL:
@@ -160,7 +179,7 @@ class DuckDBETL:
                         if aws_profile:
                             # Use specific AWS profile credentials
                             try:
-                                session = boto3.Session(profile_name=aws_profile)
+                                session = _make_boto3_session(profile_name=aws_profile)
                                 credentials = session.get_credentials()
 
                                 if credentials:
@@ -222,7 +241,7 @@ class DuckDBETL:
         if aws_profile:
             # Use specific AWS profile credentials
             try:
-                session = boto3.Session(profile_name=aws_profile)
+                session = _make_boto3_session(profile_name=aws_profile)
                 credentials = session.get_credentials()
 
                 if credentials:
@@ -699,6 +718,7 @@ result = {'ctx_id': ctx_id}
                 'Path': _Path,
                 'result': None,
                 'contexts_dir': _contexts_dir,  # Base path for notebook outputs
+                'make_boto3_session': _make_boto3_session,  # Project-aware boto3 session factory
                 # UDFs available as direct Python calls
                 'generate_ctx_id': generate_ctx_id,
                 'fetch_ct_metadata': fetch_ct_metadata,
