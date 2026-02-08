@@ -180,7 +180,7 @@ def batch_http_request(
     if output_dir:
         session_dir = Path(output_dir)
     else:
-        base_dir = Path(__file__).parent.parent / "data" / "sessions"
+        base_dir = Path(__file__).parent.parent.parent.parent / "data" / "sessions"
         session_dir = base_dir / session_id
 
     # Create organized subdirectories
@@ -368,7 +368,7 @@ def list_sessions(limit: int = 20) -> List[Dict[str, Any]]:
     Returns:
         List of session metadata dictionaries
     """
-    base_dir = Path(__file__).parent.parent / "data" / "sessions"
+    base_dir = Path(__file__).parent.parent.parent.parent / "data" / "sessions"
 
     if not base_dir.exists():
         return []
@@ -409,7 +409,7 @@ def get_session_info(session_id: str) -> Dict[str, Any]:
     Returns:
         Session metadata and file list
     """
-    base_dir = Path(__file__).parent.parent / "data" / "sessions"
+    base_dir = Path(__file__).parent.parent.parent.parent / "data" / "sessions"
 
     # Find session directory (support short IDs)
     session_dir = None

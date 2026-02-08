@@ -61,7 +61,7 @@ def fetch_ct_metadata(context_id: str) -> str:
     global _conn
 
     # Build output directory (date is embedded in context_id)
-    base_dir = Path(__file__).parent.parent.parent / "data" / "contexts"
+    base_dir = Path(__file__).parent.parent.parent.parent.parent / "data" / "contexts"
     output_dir = base_dir / context_id / "ct_metadata"
     output_dir.mkdir(parents=True, exist_ok=True)
 

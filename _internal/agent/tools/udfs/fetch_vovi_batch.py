@@ -155,7 +155,7 @@ def fetch_vovi_batch(ctx_id: str, urls: str, max_workers: int = 2) -> str:
     unloaded_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
     # Build output directory
-    base_dir = Path(__file__).parent.parent.parent / "data" / "contexts"
+    base_dir = Path(__file__).parent.parent.parent.parent.parent / "data" / "contexts"
     output_dir = base_dir / ctx_id / "vovi_forecast"
     batch_dir = output_dir / "batch"
     wildcard_dir = output_dir / "wildcard"

@@ -709,7 +709,7 @@ result = {'ctx_id': ctx_id}
             from tools.udfs.create_sim import create_sim
 
             # Base contexts directory for notebook outputs
-            _contexts_dir = _Path(__file__).parent.parent / "data" / "contexts"
+            _contexts_dir = _Path(__file__).parent.parent.parent.parent / "data" / "contexts"
 
             _py_namespace = {
                 'conn': conn,

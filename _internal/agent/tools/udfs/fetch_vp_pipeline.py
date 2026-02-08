@@ -167,7 +167,7 @@ def fetch_vp_pipeline(ctx_id: str, urls: str, status: str = "unpublished", max_w
 
     # Build output directory - separate paths for published vs unpublished
     # This prevents raw JSON responses from overwriting each other
-    base_dir = Path(__file__).parent.parent.parent / "data" / "contexts"
+    base_dir = Path(__file__).parent.parent.parent.parent.parent / "data" / "contexts"
     output_dir = base_dir / ctx_id / f"vp_{status}"  # vp_published or vp_unpublished
     batch_dir = output_dir / "batch"
     wildcard_dir = output_dir / "wildcard"
