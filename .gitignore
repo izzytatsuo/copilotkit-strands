@@ -64,3 +64,7 @@ logs/*
 
 # agent runtime data
 _internal/agent/data/
+
+# agent AWS credentials (keep .example)
+_internal/agent/aws/credentials
+!_internal/agent/aws/credentials.example

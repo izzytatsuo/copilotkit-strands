@@ -4,6 +4,16 @@ import duckdb
 import os
 import subprocess
 import boto3
+from pathlib import Path
+
+# AWS credentials: env var > project-local default
+_aws_creds_env = os.environ.get("AWS_CREDENTIALS_PATH")
+if _aws_creds_env:
+    os.environ["AWS_SHARED_CREDENTIALS_FILE"] = str(Path(_aws_creds_env).expanduser())
+else:
+    _aws_creds_path = Path(__file__).parent.parent / "aws" / "credentials"
+    if _aws_creds_path.exists():
+        os.environ.setdefault("AWS_SHARED_CREDENTIALS_FILE", str(_aws_creds_path))
 
 from tools.udfs import register_all as register_udfs, set_cookie_path as set_udf_cookie_path
 
@@ -171,11 +181,15 @@ class DuckDBETL:
                             except Exception as e:
                                 raise Exception(f"Failed to load AWS profile '{aws_profile}': {e}")
                         else:
-                            # Use default credential chain
-                            self._conn.execute("CREATE OR REPLACE SECRET (TYPE s3, PROVIDER credential_chain);")
-
-                            if self.debug:
-                                print(f"DuckDB initialized with S3 support using credential chain (attempt {attempt + 1})")
+                            # Use default credential chain (best-effort — may fail if no default AWS config)
+                            try:
+                                self._conn.execute("CREATE OR REPLACE SECRET (TYPE s3, PROVIDER credential_chain);")
+                                if self.debug:
+                                    print(f"DuckDB initialized with S3 support using credential chain (attempt {attempt + 1})")
+                            except Exception:
+                                # No default credentials available — S3 will work when aws_profile is specified per-query
+                                if self.debug:
+                                    print(f"DuckDB initialized without default S3 credentials (attempt {attempt + 1})")
                     else:
                         if self.debug:
                             print(f"DuckDB initialized (attempt {attempt + 1})")
