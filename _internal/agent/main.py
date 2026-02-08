@@ -37,6 +37,12 @@ from strands import Agent, tool
 from strands.models.openai import OpenAIModel
 from strands.models import BedrockModel
 
+# ETL tool imports
+from tools.duckdb_etl import DuckDBETL
+from tools.batch_http import batch_http_request, list_sessions, get_session_info
+from tools.run_process import run_process
+from tools.sim_data import SIMData
+
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', 'env', '.env'))
 
 # Model configuration - supports both OpenAI and Bedrock via environment variables
@@ -163,12 +169,37 @@ system_prompt = (
     "You are a helpful and wise assistant that helps manage a collection of proverbs."
 )
 
+# Initialize ETL tool providers
+etl_provider = DuckDBETL(enable_s3=True, debug=False)
+sim_provider = SIMData(debug=False)
+
 # Create Strands agent with tools
 # Note: Frontend tools (set_theme_color, hitl_test) return None - actual execution happens in the UI
 strands_agent = Agent(
     model=model,
     system_prompt=system_prompt,
-    tools=[update_proverbs, get_weather, set_theme_color],
+    tools=[
+        # Existing tools
+        update_proverbs, get_weather, set_theme_color,
+        # DuckDB ETL tools
+        etl_provider.etl,
+        etl_provider.run_notebook,
+        etl_provider.list_notebooks,
+        etl_provider.sql,
+        etl_provider.python,
+        etl_provider.connection_status,
+        etl_provider.restart_connection,
+        etl_provider.close_connection,
+        # Batch HTTP tools
+        batch_http_request, list_sessions, get_session_info,
+        # Process runner
+        run_process,
+        # SIM tools
+        sim_provider.search_sim,
+        sim_provider.fetch_sim_by_ids,
+        sim_provider.create_sim,
+        sim_provider.check_sim_status,
+    ],
 )
 
 # Wrap with AG-UI integration
