@@ -25,6 +25,7 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
     except Exception:
         pass
 
+import boto3
 from ag_ui_strands import (
     StrandsAgent,
     StrandsAgentConfig,
@@ -151,10 +152,30 @@ shared_state_config = StrandsAgentConfig(
 
 # Initialize model based on MODEL_PROVIDER environment variable
 if MODEL_PROVIDER == "bedrock":
-    # AWS Bedrock - requires AWS credentials configured via aws configure or environment
+    # Build boto3 session for Bedrock auth
+    # Priority: env vars AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY > [bedrock] profile in project credentials > default chain
+    _bedrock_key = os.getenv("AWS_ACCESS_KEY_ID", "").strip()
+    _bedrock_secret = os.getenv("AWS_SECRET_ACCESS_KEY", "").strip()
+    _bedrock_region = os.getenv("AWS_REGION", "us-east-1")
+
+    if _bedrock_key and _bedrock_secret:
+        _bedrock_session = boto3.Session(
+            aws_access_key_id=_bedrock_key,
+            aws_secret_access_key=_bedrock_secret,
+            region_name=_bedrock_region,
+        )
+    else:
+        # Try [bedrock] profile from project-local credentials
+        from tools.duckdb_etl import _make_boto3_session
+        try:
+            _bedrock_session = _make_boto3_session(profile_name="bedrock")
+        except Exception:
+            # Fall back to default credential chain
+            _bedrock_session = boto3.Session(region_name=_bedrock_region)
+
     model = BedrockModel(
+        boto_session=_bedrock_session,
         model_id=os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0"),
-        region_name=os.getenv("AWS_REGION", "us-east-1"),
         max_tokens=int(os.getenv("BEDROCK_MAX_TOKENS", "8192")),
     )
 else:
