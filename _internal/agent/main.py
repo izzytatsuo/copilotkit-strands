@@ -37,7 +37,7 @@ from strands import Agent, tool
 from strands.models.openai import OpenAIModel
 from strands.models import BedrockModel
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', 'env', '.env'))
 
 # Model configuration - supports both OpenAI and Bedrock via environment variables
 # Set MODEL_PROVIDER=bedrock to use AWS Bedrock, otherwise defaults to OpenAI
