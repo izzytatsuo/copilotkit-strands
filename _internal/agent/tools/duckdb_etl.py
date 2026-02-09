@@ -171,6 +171,8 @@ class DuckDBETL:
                 try:
                     self._conn = duckdb.connect()
 
+                    self._conn.execute("INSTALL excel; LOAD excel;")
+
                     if self.enable_s3:
                         self._conn.execute("INSTALL httpfs; LOAD httpfs;")
                         self._conn.execute("INSTALL aws; LOAD aws;")
@@ -766,11 +768,39 @@ result = {'ctx_id': ctx_id}
 
                     else:
                         # SQL cell (default)
-                        # Create view from transformation
-                        conn.execute(f"CREATE OR REPLACE VIEW {name} AS {query}")
+                        # Strip leading comment line (-- name: ... | type: sql)
+                        import re as _re
+                        clean_query = _re.sub(r'^--\s*name:.*\n?', '', query, count=1).strip()
+
+                        # Substitute Python variables into SQL (for _vars-style references)
+                        # Replace bare identifiers that match Python namespace string vars
+                        for _var_name, _var_val in _py_namespace.items():
+                            if isinstance(_var_val, str) and _var_name in clean_query:
+                                # Normalize backslashes to forward slashes for DuckDB SQL on Windows
+                                _safe_val = _var_val.replace('\\', '/')
+                                # Only replace if it appears as a bare identifier (not inside quotes)
+                                clean_query = _re.sub(
+                                    r'\b' + _re.escape(_var_name) + r'\b',
+                                    f"'{_safe_val}'",
+                                    clean_query
+                                )
+
+                        # If cell already has CREATE/INSERT/etc, execute directly
+                        _table_name = name
+                        if _re.match(r'(?i)^(CREATE|INSERT|DROP|ALTER|UPDATE|DELETE)', clean_query):
+                            conn.execute(clean_query)
+                            # Extract actual table/view name from CREATE statement
+                            _create_match = _re.match(
+                                r'(?i)^CREATE\s+(?:OR\s+REPLACE\s+)?(?:TABLE|VIEW)\s+(\w+)',
+                                clean_query
+                            )
+                            if _create_match:
+                                _table_name = _create_match.group(1)
+                        else:
+                            conn.execute(f"CREATE OR REPLACE VIEW {name} AS {clean_query}")
 
                         # Get row count
-                        row_count = conn.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
+                        row_count = conn.execute(f"SELECT COUNT(*) FROM {_table_name}").fetchone()[0]
 
                         result["transformations_run"].append({
                             "name": name,

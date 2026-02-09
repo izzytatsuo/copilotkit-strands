@@ -44,8 +44,8 @@ export default function CopilotKitPage() {
         defaultOpen={true}
         // Adds an initial message to the chat
         labels={{
-          title: "Popup Assistant",
-          initial: "👋 Hi, there! You're chatting with an Strands agent.",
+          title: "Knucks",
+          initial: "Hey! How can I help?",
         }}
         // Suggestions for guiding users
         suggestions={[
@@ -76,7 +76,7 @@ function YourMainContent({ themeColor }: { themeColor: string }) {
     name: "strands_agent",
     initialState: {
       proverbs: [
-        "CopilotKit may be new, but its the best thing since sliced bread.",
+        "mountain", "amzl", "e2e",
       ],
     },
   });
@@ -120,10 +120,10 @@ function YourMainContent({ themeColor }: { themeColor: string }) {
     >
       <div className="bg-white/20 backdrop-blur-md p-8 rounded-2xl shadow-xl max-w-2xl w-full">
         <h1 className="text-4xl font-bold text-white mb-2 text-center">
-          Proverbs
+          Parameters
         </h1>
         <p className="text-gray-200 text-center italic mb-6">
-          This is a demonstrative page, but it could be anything you want! 🪁
+          wip
         </p>
         <hr className="border-white/20 my-6" />
         <div className="flex flex-col gap-3">
@@ -150,7 +150,7 @@ function YourMainContent({ themeColor }: { themeColor: string }) {
         </div>
         {state.proverbs?.length === 0 && (
           <p className="text-center text-white/80 italic my-8">
-            No proverbs yet. Ask the assistant to add some!
+            No params loaded.
           </p>
         )}
       </div>
