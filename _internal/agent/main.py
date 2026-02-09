@@ -10,6 +10,7 @@ This example demonstrates a Strands agent integrated with AG-UI, featuring:
 import json
 import os
 import sys
+from pathlib import Path
 from typing import List
 
 # Fix Windows console encoding for Unicode characters (emojis like ✅)
@@ -197,9 +198,26 @@ else:
         model_id=os.getenv("OPENAI_MODEL_ID", "gpt-4o"),
     )
 
-system_prompt = (
-    "You are a helpful and wise assistant that helps manage a collection of proverbs."
-)
+def load_knowledge() -> str:
+    """Load domain knowledge from markdown files in the knowledge folder."""
+    knowledge_dir = Path(__file__).parent / "knowledge"
+    if not knowledge_dir.exists():
+        return ""
+    knowledge_parts = []
+    for md_file in sorted(knowledge_dir.glob("*.md")):
+        try:
+            content = md_file.read_text(encoding="utf-8")
+            knowledge_parts.append(content)
+        except Exception as e:
+            print(f"Warning: Could not load {md_file}: {e}")
+    return ("\n\n---\n\n").join(knowledge_parts)
+
+
+DOMAIN_KNOWLEDGE = load_knowledge()
+
+system_prompt = "You are a helpful and wise assistant that helps manage a collection of proverbs."
+if DOMAIN_KNOWLEDGE:
+    system_prompt += "\n\n" + "=" * 50 + "\nDOMAIN KNOWLEDGE\n" + "=" * 50 + "\n\n" + DOMAIN_KNOWLEDGE
 
 # Initialize ETL tool providers
 etl_provider = DuckDBETL(enable_s3=True, debug=False)

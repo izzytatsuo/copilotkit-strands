@@ -787,11 +787,11 @@ result = {'ctx_id': ctx_id}
 
                         # If cell already has CREATE/INSERT/etc, execute directly
                         _table_name = name
-                        if _re.match(r'(?i)^(CREATE|INSERT|DROP|ALTER|UPDATE|DELETE)', clean_query):
+                        if _re.match(r'(?i)^(SET|CREATE|INSERT|DROP|ALTER|UPDATE|DELETE)', clean_query):
                             conn.execute(clean_query)
                             # Extract actual table/view name from CREATE statement
-                            _create_match = _re.match(
-                                r'(?i)^CREATE\s+(?:OR\s+REPLACE\s+)?(?:TABLE|VIEW)\s+(\w+)',
+                            _create_match = _re.search(
+                                r'(?i)CREATE\s+(?:OR\s+REPLACE\s+)?(?:TABLE|VIEW)\s+(\w+)',
                                 clean_query
                             )
                             if _create_match:
