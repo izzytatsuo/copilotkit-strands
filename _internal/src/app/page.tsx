@@ -76,7 +76,7 @@ function YourMainContent({ themeColor }: { themeColor: string }) {
     name: "strands_agent",
     initialState: {
       proverbs: [
-        "mountain", "amzl", "e2e",
+        "mountain", "amzl",
       ],
     },
   });
@@ -123,7 +123,7 @@ function YourMainContent({ themeColor }: { themeColor: string }) {
           Parameters
         </h1>
         <p className="text-gray-200 text-center italic mb-6">
-          wip
+          ---
         </p>
         <hr className="border-white/20 my-6" />
         <div className="flex flex-col gap-3">
