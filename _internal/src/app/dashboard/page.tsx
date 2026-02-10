@@ -45,7 +45,7 @@ export default function DashboardPage() {
         suggestions={[
           {
             title: "Run Forecast Setup",
-            message: "Run the forecast_setup notebook",
+            message: "Run the forecast setup notebook",
           },
           {
             title: "Refresh Data",
@@ -60,10 +60,21 @@ export default function DashboardPage() {
 }
 
 function DashboardContent({ themeColor }: { themeColor: string }) {
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const { state } = useCoAgent({
     name: "strands_agent",
     initialState: {
       proverbs: ["mountain", "amzl"],
+    },
+  });
+
+  useFrontendTool({
+    name: "refresh_dashboard",
+    description: "Refresh the dashboard grid and chart data after a notebook run completes.",
+    parameters: [],
+    handler() {
+      setRefreshKey((k) => k + 1);
     },
   });
 
@@ -99,7 +110,7 @@ function DashboardContent({ themeColor }: { themeColor: string }) {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      <ForecastDashboard />
+      <ForecastDashboard refreshKey={refreshKey} />
     </div>
   );
 }

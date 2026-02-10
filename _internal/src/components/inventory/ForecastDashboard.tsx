@@ -267,11 +267,13 @@ function parseGridCsv(text: string): JoinedRow[] {
 interface ForecastDashboardProps {
   gridDataUrl?: string;
   visualDataUrl?: string;
+  refreshKey?: number;
 }
 
 export default function ForecastDashboard({
   gridDataUrl = "/api/grid-data",
   visualDataUrl = "/api/visual-data",
+  refreshKey = 0,
 }: ForecastDashboardProps) {
   const gridRef = useRef<AgGridReact<JoinedRow>>(null);
   const [gridApi, setGridApi] = useState<GridApi<JoinedRow> | null>(null);
@@ -297,9 +299,12 @@ export default function ForecastDashboard({
       setError(null);
 
       try {
+        const cacheBust = `_t=${Date.now()}`;
+        const gridSep = gridDataUrl.includes("?") ? "&" : "?";
+        const visSep = visualDataUrl.includes("?") ? "&" : "?";
         const [gridResp, pbaResp] = await Promise.allSettled([
-          fetch(gridDataUrl),
-          fetch(visualDataUrl),
+          fetch(`${gridDataUrl}${gridSep}${cacheBust}`),
+          fetch(`${visualDataUrl}${visSep}${cacheBust}`),
         ]);
 
         if (!cancelled) {
@@ -346,32 +351,33 @@ export default function ForecastDashboard({
     return () => {
       cancelled = true;
     };
-  }, [gridDataUrl, visualDataUrl]);
+  }, [gridDataUrl, visualDataUrl, refreshKey]);
 
   // ── Tabs ──────────────────────────────────────────────────────────
 
   const tabGroups = useMemo(() => {
     const flagCounts = new Map<string, number>();
-    const confCounts = new Map<string, number>();
+    const anomalyCounts = new Map<string, number>();
     for (const row of gridData) {
       for (const f of row._flags ?? []) {
         flagCounts.set(f, (flagCounts.get(f) ?? 0) + 1);
       }
-      const conf = row.automated_confidence != null ? parseFloat(String(row.automated_confidence)) : null;
-      if (conf != null && !isNaN(conf)) {
-        const key = conf >= 1 ? "conf:1" : "conf:0";
-        confCounts.set(key, (confCounts.get(key) ?? 0) + 1);
+      const val = row.confidence_anomaly != null ? String(row.confidence_anomaly).toLowerCase() : null;
+      if (val === "false") {
+        anomalyCounts.set("anomaly:false", (anomalyCounts.get("anomaly:false") ?? 0) + 1);
+      } else {
+        anomalyCounts.set("anomaly:flagged", (anomalyCounts.get("anomaly:flagged") ?? 0) + 1);
       }
     }
     return [
       { label: "All", value: "all", count: gridData.length },
-      // Flag tabs first
+      // Flag tabs
       ...Array.from(flagCounts.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([value, count]) => ({ label: value, value: `flag:${value}`, count })),
-      // Confidence tabs
-      ...(confCounts.has("conf:1") ? [{ label: "Confidence 1", value: "conf:1", count: confCounts.get("conf:1")! }] : []),
-      ...(confCounts.has("conf:0") ? [{ label: "Confidence 0", value: "conf:0", count: confCounts.get("conf:0")! }] : []),
+      // Confidence anomaly tabs
+      ...(anomalyCounts.has("anomaly:flagged") ? [{ label: "Anomaly", value: "anomaly:flagged", count: anomalyCounts.get("anomaly:flagged")! }] : []),
+      ...(anomalyCounts.has("anomaly:false") ? [{ label: "No Anomaly", value: "anomaly:false", count: anomalyCounts.get("anomaly:false")! }] : []),
     ];
   }, [gridData]);
 
@@ -383,17 +389,11 @@ export default function ForecastDashboard({
       const flag = activeTab.slice(5);
       return gridData.filter((r) => r._flags?.includes(flag));
     }
-    if (activeTab === "conf:1") {
-      return gridData.filter((r) => {
-        const c = r.automated_confidence != null ? parseFloat(String(r.automated_confidence)) : null;
-        return c != null && !isNaN(c) && c >= 1;
-      });
+    if (activeTab === "anomaly:flagged") {
+      return gridData.filter((r) => String(r.confidence_anomaly).toLowerCase() !== "false");
     }
-    if (activeTab === "conf:0") {
-      return gridData.filter((r) => {
-        const c = r.automated_confidence != null ? parseFloat(String(r.automated_confidence)) : null;
-        return c != null && !isNaN(c) && c < 1;
-      });
+    if (activeTab === "anomaly:false") {
+      return gridData.filter((r) => String(r.confidence_anomaly).toLowerCase() === "false");
     }
     return gridData.filter((r) => r.tab_group === activeTab);
   }, [gridData, activeTab]);

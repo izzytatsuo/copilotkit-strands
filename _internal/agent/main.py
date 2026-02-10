@@ -96,6 +96,18 @@ def set_theme_color(theme_color: str):
 
 
 @tool
+def refresh_dashboard():
+    """Refresh the dashboard grid and chart data after a notebook run completes.
+
+    This is a frontend tool - it returns None as the actual
+    execution happens on the frontend via useFrontendTool.
+    Call this after run_notebook or run_process completes to
+    update the dashboard with the latest data.
+    """
+    return None
+
+
+@tool
 def update_proverbs(proverbs_list: ProverbsList):
     """Update the complete list of proverbs.
 
@@ -224,13 +236,13 @@ etl_provider = DuckDBETL(enable_s3=True, debug=False)
 sim_provider = SIMData(debug=False)
 
 # Create Strands agent with tools
-# Note: Frontend tools (set_theme_color, hitl_test) return None - actual execution happens in the UI
+# Note: Frontend tools (set_theme_color, refresh_dashboard) return None - actual execution happens in the UI
 strands_agent = Agent(
     model=model,
     system_prompt=system_prompt,
     tools=[
         # Existing tools
-        update_proverbs, get_weather, set_theme_color,
+        update_proverbs, get_weather, set_theme_color, refresh_dashboard,
         # DuckDB ETL tools
         etl_provider.etl,
         etl_provider.run_notebook,

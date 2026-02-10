@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-// Serve joined.csv from the latest forecast_setup context directory
+// Serve joined.csv from the latest forecast context directory
 const CONTEXTS_DIR = path.resolve(
   process.cwd(),
   "..",
@@ -15,7 +15,7 @@ function findLatestFile(filename: string): string | null {
 
   const dirs = fs
     .readdirSync(CONTEXTS_DIR)
-    .filter((d) => d.includes("forecast_setup"))
+    .filter((d) => d.includes("forecast_"))
     .sort()
     .reverse();
 

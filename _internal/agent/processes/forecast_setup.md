@@ -11,10 +11,10 @@
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `site_list_path` | **Yes** | Path to the site list Excel file |
-| `ct_file_path` | **Yes** | Path to the VP/CT CSV file (UTC timestamps) |
+| `tz_bucket` | **Yes** | Timezone bucket (Eastern, Central, Mountain, Pacific, etc.) |
+| `biz` | No | Business line (default: AMZL) |
 
-**If either parameter is not provided, ask the user for the file path.**
+**If tz_bucket is not provided, ask the user which timezone bucket to run.**
 
 ---
 
@@ -23,21 +23,26 @@
 Use the `run_notebook` tool:
 
 ```python
-run_notebook("forecast_setup.ipynb", variables={"site_list_path": "{path}", "ct_file_path": "{path}"})
+run_notebook("forecast_setup.ipynb", variables={"tz_bucket": "{timezone}", "biz": "AMZL"})
 ```
 
 The notebook will:
-1. Validate input files exist
-2. Auto-calculate target date (tomorrow Pacific)
-3. Load site list (AMZL stations) and VP raw data
-4. Fetch VOVI forecasts (US + CA, AMZL, premium)
-5. Download latest pipeline artifacts from S3
-6. Download latest intraday PBA data from S3
-7. Pivot VP data (long to wide with util columns and grid keys)
-8. Join site list + VP + VOVI with `available_inputs` flag
-9. Save `joined.csv` to context directory
+1. Auto-calculate target date (tomorrow Pacific)
+2. Fetch CT metadata and build timezone bucket map
+3. Filter site list to stations in the specified timezone bucket
+4. Build VP URLs and fetch via batch HTTP
+5. Fetch VOVI forecasts (US + CA, AMZL, premium)
+6. Download latest pipeline artifacts from S3
+7. Download latest intraday PBA data from S3
+8. Pivot VP data (long to wide with util columns and grid keys)
+9. Join site list + VP + VOVI with `available_inputs` flag
+10. Save `joined.csv` and `visual.json` to context directory
 
-## Step 2: Display Results
+## Step 2: Refresh Dashboard
+
+After the notebook completes successfully, call the `refresh_dashboard` tool to update the dashboard with the new data.
+
+## Step 3: Display Results
 
 After notebook execution, report:
 
@@ -46,7 +51,7 @@ After notebook execution, report:
 3. **VOVI match count** - how many stations matched VOVI data
 4. **Output location** - path to context directory with `joined.csv`
 
-## Step 3: Offer Next Steps
+## Step 4: Offer Next Steps
 
 Ask if the user wants to:
 - View a sample of the joined data
@@ -59,7 +64,7 @@ Ask if the user wants to:
 
 | Step | Status | Details |
 |------|--------|---------|
-| Input Validation | PASS/FAIL | site_list and ct_file exist |
+| CT Metadata | PASS/FAIL | station count for timezone bucket |
 | VOVI Fetch | PASS/FAIL | US + CA row counts |
 | Pipeline Artifacts | PASS/FAIL | artifact count |
 | PBA Download | PASS/FAIL | row count |
@@ -71,7 +76,7 @@ Ask if the user wants to:
 ## Example Usage
 
 User: "run forecast setup"
--> Ask for site_list_path and ct_file_path, then execute
+-> Ask for timezone bucket, then execute
 
-User: "forecast setup with this site list and CT file" (with file paths)
--> Execute directly with provided paths
+User: "run forecast setup for Eastern"
+-> Execute directly with tz_bucket=Eastern
