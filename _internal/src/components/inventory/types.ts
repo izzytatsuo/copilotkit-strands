@@ -1,0 +1,72 @@
+export interface JoinedRow {
+  station: string;
+  cycle: string | null;
+  business_org: string | null;
+  available_inputs: string;
+  plan_start_date: string | null;
+  ofd_dates: string | null;
+  demand_types: string | null;
+  cpts: string | null;
+  cpts_local: string | null;
+  cpts_utc: string | null;
+  grid_key_local: string | null;
+  grid_key_utc: string | null;
+  forecast_type: string | null;
+  automated_confidence: string | null;
+  auto_forecast_util: number | null;
+  util: number | null;
+  vovi_uncapped_slam_forecast: string | null;
+  uncapped_slam_forecast: string | null;
+  adjusted_uncapped_slam_forecast: string | null;
+  capped_slam_forecast: string | null;
+  atrops_soft_cap: string | null;
+  atrops_hard_cap: string | null;
+  latest_deployed_cap: string | null;
+  cap_target_buffer: string | null;
+  current_slam: string | null;
+  current_schedule: string | null;
+  total_volume_available: string | null;
+  total_backlog: string | null;
+  in_station_backlog: string | null;
+  post_cutoff_adjustment: string | null;
+  net_volume_adjustments: string | null;
+  vovi_adjustment: string | null;
+  confidence_anomaly: string | null;
+  automated_uncapped_slam_forecast: string | null;
+  weekly_uncapped_slam_forecast: string | null;
+  earlies_expected: string | null;
+  earlies_received: string | null;
+  returns: string | null;
+  sideline_in: string | null;
+  mnr_expected: string | null;
+  mnr_received: string | null;
+  vovi_modified_user: string | null;
+  vovi_proposed_cap: string | null;
+  vovi_post_cutoff_adjustment: string | null;
+  vovi_adjusted_forecast: string | null;
+  vovi_forecast_source: string | null;
+  vovi_original_forecast: string | null;
+  vovi_forecast_status: string | null;
+  vovi_forecast_adjustment: string | null;
+  vovi_current_slammed: string | null;
+  vovi_current_scheduled: string | null;
+  vovi_soft_cap: string | null;
+  vovi_hard_cap: string | null;
+  execution_ts: string | null;
+  // Derived field for tab grouping
+  tab_group: string;
+}
+
+export interface PbaRow {
+  grid_key: string;
+  pba_type: "target" | "match";
+  pba_ofd_date: string;
+  pba_dhm_horizon: string;
+  pba_bi_hourly_local: string;
+  pba_horizon_rank: number;
+  pba_scheduled: number;
+  pba_soft_cap: number;
+  pba_hard_cap: number;
+  pba_slammed: number;
+  pba_cap_utilization: number;
+}

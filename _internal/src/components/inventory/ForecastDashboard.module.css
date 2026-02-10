@@ -1,0 +1,129 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  padding: 6px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 220px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.searchInput:focus {
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.15);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 4px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  color: #495057;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: #e9ecef;
+}
+
+.tabActive {
+  background: #4a90d9;
+  color: #fff;
+  border-color: #4a90d9;
+}
+
+.tabActive:hover {
+  background: #3a7bc8;
+}
+
+.tabCount {
+  font-size: 10px;
+  opacity: 0.8;
+  margin-left: 4px;
+}
+
+.splitContainer {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gridPanel {
+  width: 40%;
+  min-width: 300px;
+  border-right: 1px solid #dee2e6;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartPanel {
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.chartPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #868e96;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.chartHeader {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #343a40;
+  border-bottom: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.chartBody {
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+}
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 16px;
+  font-size: 11px;
+  color: #868e96;
+  background: #fff;
+  border-top: 1px solid #dee2e6;
+  flex-shrink: 0;
+}

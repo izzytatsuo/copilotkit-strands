@@ -22,3 +22,25 @@ body,
 html {
   height: 100%;
 }
+
+/* AG Grid Theme Overrides */
+.ag-theme-alpine {
+  --ag-row-height: 32px;
+  --ag-header-height: 36px;
+  --ag-font-size: 13px;
+  --ag-border-color: #dee2e6;
+  --ag-header-background-color: #f1f3f5;
+  --ag-header-foreground-color: #343a40;
+  --ag-odd-row-background-color: #f8f9fa;
+  --ag-row-hover-color: #e7f1ff;
+  --ag-selected-row-background-color: #d0e4ff;
+  --ag-range-selection-border-color: #4a90d9;
+}
+
+.ag-theme-alpine .ag-header-cell-label {
+  font-weight: 600;
+}
+
+.ag-theme-alpine .ag-cell {
+  line-height: 32px;
+}
