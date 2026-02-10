@@ -12,7 +12,7 @@ import { DefaultToolComponent } from "@/components/default-tool-ui";
 import { WeatherCard } from "@/components/weather";
 
 export default function CopilotKitPage() {
-  const [themeColor, setThemeColor] = useState("#6366f1");
+  const [themeColor, setThemeColor] = useState("#000000");
 
   useEffect(() => {
     console.log(themeColor);

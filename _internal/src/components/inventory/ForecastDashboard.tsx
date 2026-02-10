@@ -23,23 +23,42 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 // ── Column Definitions ────────────────────────────────────────────────
 
 const columnDefs: ColDef<JoinedRow>[] = [
-  { field: "station", headerName: "Station", width: 100, pinned: "left" },
-  { field: "cpts_local", headerName: "CPT", width: 70 },
+  { field: "station", headerName: "Station", width: 80, minWidth: 80, maxWidth: 80, pinned: "left" },
+  {
+    field: "cpts_local",
+    headerName: "CPT",
+    width: 80,
+    minWidth: 80,
+    maxWidth: 80,
+    pinned: "left",
+    valueFormatter: (params) => params.value ? String(params.value).slice(0, 5) : "",
+  },
+  { field: "flags", headerName: "Flags", width: 110, minWidth: 110, maxWidth: 110, pinned: "left" },
   { field: "available_inputs", headerName: "Inputs", width: 90 },
   { field: "automated_confidence", headerName: "Confidence", width: 100 },
   {
     field: "automated_uncapped_slam_forecast",
-    headerName: "Auto Uncapped Fcst",
+    headerName: "Automated",
     width: 150,
     type: "numericColumn",
   },
   {
     field: "vovi_uncapped_slam_forecast",
-    headerName: "VOVI Uncapped Fcst",
+    headerName: "VOVI",
     width: 150,
     type: "numericColumn",
   },
   { field: "vovi_modified_user", headerName: "Modified User", width: 120 },
+  { field: "bucket_lower", headerName: "Bucket Lo", width: 90, type: "numericColumn" },
+  { field: "bucket_upper", headerName: "Bucket Hi", width: 90, type: "numericColumn" },
+  { field: "peak_to_eod_drop_pct", headerName: "Peak-EOD Drop%", width: 120, type: "numericColumn" },
+  { field: "constrained_after_target", headerName: "Constrained", width: 100, type: "numericColumn" },
+  { field: "sched_at_max_drop", headerName: "Sched at Max Drop", width: 130, type: "numericColumn" },
+  { field: "max_drop_4hr", headerName: "Max Drop 4hr", width: 110, type: "numericColumn" },
+  { field: "had_desched_notify", headerName: "Desched Notify", width: 110, type: "numericColumn" },
+  { field: "had_desched_execute", headerName: "Desched Exec", width: 110, type: "numericColumn" },
+  { field: "flatline_execute", headerName: "Flatline Exec", width: 110, type: "numericColumn" },
+  { field: "flatline_notify", headerName: "Flatline Notify", width: 110, type: "numericColumn" },
 ];
 
 // ── Chart Trace Builder ───────────────────────────────────────────────
@@ -60,9 +79,26 @@ const TRACE_CONFIGS: TraceConfig[] = [
   { field: "pba_hard_cap", name: "cap", color: "#000000", isCap: true },
 ];
 
-function buildTraces(pbaData: PbaRow[], gridKey: string) {
+interface BuildResult {
+  traces: Array<Record<string, unknown>>;
+  categoryOrder: string[];
+}
+
+function buildTraces(pbaData: PbaRow[], gridKey: string): BuildResult {
   const filtered = pbaData.filter((r) => r.grid_key === gridKey);
   const traces: Array<Record<string, unknown>> = [];
+
+  // Build sorted category order from ALL rows (target + match) by horizon_rank
+  const horizonMap = new Map<string, number>();
+  for (const r of filtered) {
+    const existing = horizonMap.get(r.pba_dhm_horizon);
+    if (existing === undefined || r.pba_horizon_rank < existing) {
+      horizonMap.set(r.pba_dhm_horizon, r.pba_horizon_rank);
+    }
+  }
+  const categoryOrder = Array.from(horizonMap.entries())
+    .sort((a, b) => a[1] - b[1])
+    .map(([dhm]) => dhm);
 
   for (const pbaType of ["target", "match"] as const) {
     const rows = filtered
@@ -94,15 +130,100 @@ function buildTraces(pbaData: PbaRow[], gridKey: string) {
         mode: "lines",
         visible: cfg.hidden ? "legendonly" : true,
         line: {
-          color: pbaType === "match" ? "#1565C0" : cfg.color,
+          color: pbaType === "match" ? "#4DB6AC" : cfg.color,
           dash: cfg.dash ?? "solid",
           width: cfg.isCap ? 1.5 : 2,
         },
       });
     }
+
+    // Fan chart traces — target only
+    if (pbaType === "target") {
+      const hasFan = rows.some((r) => r.pba_p10 != null && r.pba_p90 != null);
+      if (hasFan) {
+        // Outer fan: p10 lower bound (drawn first, no fill)
+        traces.push({
+          x,
+          y: rows.map((r) => r.pba_p10 ?? r.pba_scheduled),
+          name: "p10-p90",
+          legendgroup: "fan-outer",
+          showlegend: false,
+          type: "scatter",
+          mode: "lines",
+          line: { color: "transparent", width: 0 },
+          hoverinfo: "skip",
+        });
+        // Outer fan: p90 upper bound (fill down to p10)
+        traces.push({
+          x,
+          y: rows.map((r) => r.pba_p90 ?? r.pba_scheduled),
+          name: "p10-p90",
+          legendgroup: "fan-outer",
+          showlegend: true,
+          type: "scatter",
+          mode: "lines",
+          fill: "tonexty",
+          fillcolor: "rgba(33,150,243,0.15)",
+          line: { color: "transparent", width: 0 },
+          hoverinfo: "skip",
+        });
+
+        // Inner fan: p30 lower bound (no fill)
+        traces.push({
+          x,
+          y: rows.map((r) => r.pba_p30 ?? r.pba_scheduled),
+          name: "p30-p70",
+          legendgroup: "fan-inner",
+          showlegend: false,
+          type: "scatter",
+          mode: "lines",
+          line: { color: "transparent", width: 0 },
+          hoverinfo: "skip",
+        });
+        // Inner fan: p70 upper bound (fill down to p30)
+        traces.push({
+          x,
+          y: rows.map((r) => r.pba_p70 ?? r.pba_scheduled),
+          name: "p30-p70",
+          legendgroup: "fan-inner",
+          showlegend: true,
+          type: "scatter",
+          mode: "lines",
+          fill: "tonexty",
+          fillcolor: "rgba(33,150,243,0.35)",
+          line: { color: "transparent", width: 0 },
+          hoverinfo: "skip",
+        });
+
+        // Cumulative median line
+        traces.push({
+          x,
+          y: rows.map((r) => r.pba_cumulative_median),
+          name: "median",
+          legendgroup: "median",
+          showlegend: true,
+          type: "scatter",
+          mode: "lines",
+          line: { color: "#1565C0", width: 2, dash: "solid" },
+        });
+
+        // Cumulative median adjusted line
+        traces.push({
+          x,
+          y: rows.map((r) => r.pba_cumulative_median_adj),
+          name: "median adj",
+          legendgroup: "median-adj",
+          showlegend: true,
+          type: "scatter",
+          mode: "lines",
+          visible: "legendonly",
+          line: { color: "#1565C0", width: 2, dash: "solid" },
+        });
+      }
+    }
   }
 
-  return traces;
+  return { traces, categoryOrder };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -111,6 +232,11 @@ function deriveTabGroup(row: JoinedRow): string {
   const inputs = row.available_inputs ?? "unknown";
   const confidence = row.automated_confidence ?? "none";
   return `${inputs}_${confidence}`;
+}
+
+function parseFlags(row: JoinedRow): string[] {
+  if (!row.flags) return [];
+  return row.flags.split(",").filter(Boolean);
 }
 
 function parseGridCsv(text: string): JoinedRow[] {
@@ -128,9 +254,10 @@ function parseGridCsv(text: string): JoinedRow[] {
     if (obj.auto_forecast_util != null)
       obj.auto_forecast_util = parseFloat(obj.auto_forecast_util as string);
     if (obj.util != null) obj.util = parseFloat(obj.util as string);
-    // Derive tab_group
+    // Derive tab_group, parse flags
     const row = obj as unknown as JoinedRow;
     row.tab_group = deriveTabGroup(row);
+    row._flags = parseFlags(row);
     return row;
   });
 }
@@ -185,6 +312,7 @@ export default function ForecastDashboard({
               const rows = (json as JoinedRow[]).map((r) => ({
                 ...r,
                 tab_group: deriveTabGroup(r),
+                _flags: parseFlags(r),
               }));
               setGridData(rows);
             } else {
@@ -223,27 +351,51 @@ export default function ForecastDashboard({
   // ── Tabs ──────────────────────────────────────────────────────────
 
   const tabGroups = useMemo(() => {
-    const counts = new Map<string, number>();
+    const flagCounts = new Map<string, number>();
+    const confCounts = new Map<string, number>();
     for (const row of gridData) {
-      const tg = row.tab_group ?? "unknown_none";
-      counts.set(tg, (counts.get(tg) ?? 0) + 1);
+      for (const f of row._flags ?? []) {
+        flagCounts.set(f, (flagCounts.get(f) ?? 0) + 1);
+      }
+      const conf = row.automated_confidence != null ? parseFloat(String(row.automated_confidence)) : null;
+      if (conf != null && !isNaN(conf)) {
+        const key = conf >= 1 ? "conf:1" : "conf:0";
+        confCounts.set(key, (confCounts.get(key) ?? 0) + 1);
+      }
     }
     return [
       { label: "All", value: "all", count: gridData.length },
-      ...Array.from(counts.entries())
+      // Flag tabs first
+      ...Array.from(flagCounts.entries())
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([value, count]) => ({ label: value, value, count })),
+        .map(([value, count]) => ({ label: value, value: `flag:${value}`, count })),
+      // Confidence tabs
+      ...(confCounts.has("conf:1") ? [{ label: "Confidence 1", value: "conf:1", count: confCounts.get("conf:1")! }] : []),
+      ...(confCounts.has("conf:0") ? [{ label: "Confidence 0", value: "conf:0", count: confCounts.get("conf:0")! }] : []),
     ];
   }, [gridData]);
 
   // ── Filtered Data ─────────────────────────────────────────────────
 
   const filteredData = useMemo(() => {
-    let rows = gridData;
-    if (activeTab !== "all") {
-      rows = rows.filter((r) => r.tab_group === activeTab);
+    if (activeTab === "all") return gridData;
+    if (activeTab.startsWith("flag:")) {
+      const flag = activeTab.slice(5);
+      return gridData.filter((r) => r._flags?.includes(flag));
     }
-    return rows;
+    if (activeTab === "conf:1") {
+      return gridData.filter((r) => {
+        const c = r.automated_confidence != null ? parseFloat(String(r.automated_confidence)) : null;
+        return c != null && !isNaN(c) && c >= 1;
+      });
+    }
+    if (activeTab === "conf:0") {
+      return gridData.filter((r) => {
+        const c = r.automated_confidence != null ? parseFloat(String(r.automated_confidence)) : null;
+        return c != null && !isNaN(c) && c < 1;
+      });
+    }
+    return gridData.filter((r) => r.tab_group === activeTab);
   }, [gridData, activeTab]);
 
   // ── Grid Events ───────────────────────────────────────────────────
@@ -268,15 +420,15 @@ export default function ForecastDashboard({
 
   // ── Chart ─────────────────────────────────────────────────────────
 
-  const chartTraces = useMemo(() => {
-    if (!selectedGridKey) return [];
+  const chartResult = useMemo(() => {
+    if (!selectedGridKey) return { traces: [], categoryOrder: [] };
     return buildTraces(pbaData, selectedGridKey);
   }, [pbaData, selectedGridKey]);
 
   const chartTitle = useMemo(() => {
     if (!selectedGridKey) return "";
     const parts = selectedGridKey.split("#");
-    return `PBA: ${parts[1] ?? ""} @ ${parts[2] ?? ""} (${parts[0] ?? ""})`;
+    return `PBA: ${parts[1] ?? ""} ${parts[2] ?? ""} (${parts[0] ?? ""})`;
   }, [selectedGridKey]);
 
   // ── Render ────────────────────────────────────────────────────────
@@ -304,7 +456,7 @@ export default function ForecastDashboard({
         <input
           className={styles.searchInput}
           type="text"
-          placeholder="Search stations..."
+          placeholder=""
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
@@ -334,7 +486,7 @@ export default function ForecastDashboard({
               defaultColDef={{
                 sortable: true,
                 resizable: true,
-                filter: true,
+                filter: false,
               }}
               rowSelection="single"
               onGridReady={onGridReady}
@@ -349,18 +501,20 @@ export default function ForecastDashboard({
 
         {/* Chart Panel */}
         <div className={styles.chartPanel}>
-          {selectedGridKey && chartTraces.length > 0 ? (
+          {selectedGridKey && chartResult.traces.length > 0 ? (
             <>
               <div className={styles.chartHeader}>{chartTitle}</div>
               <div className={styles.chartBody}>
                 <Plot
-                  data={chartTraces}
+                  data={chartResult.traces}
                   layout={{
                     autosize: true,
                     margin: { l: 50, r: 20, t: 10, b: 40 },
                     xaxis: {
                       title: "DHM Horizon",
                       type: "category",
+                      categoryorder: "array",
+                      categoryarray: chartResult.categoryOrder,
                       dtick: 12,
                       tickangle: 0,
                     },

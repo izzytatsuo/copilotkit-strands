@@ -117,8 +117,10 @@ def _transform_vp_response(response_data: dict, source_file: str) -> tuple:
             for demand_type, demand_data in demand_types.items():
                 cpts = demand_data.get('cpts', {})
                 for cpt_key, cpt_data in cpts.items():
-                    # Normalize CPT to time-only format
+                    # Normalize CPT to time-only, then combine with ofd_date
+                    # to produce full ISO timestamp matching file-loaded format
                     cpt_time = _normalize_cpt(cpt_key)
+                    cpt_full = f"{ofd_date}T{cpt_time}.000Z"
 
                     for metric_name, metric_value in cpt_data.items():
                         row = {
@@ -128,7 +130,7 @@ def _transform_vp_response(response_data: dict, source_file: str) -> tuple:
                             'plan_start_date': plan_start_date,
                             'ofd_dates': ofd_date,
                             'demand_types': demand_type,
-                            'cpts': cpt_time
+                            'cpts': cpt_full
                         }
                         data_rows.append(row)
 

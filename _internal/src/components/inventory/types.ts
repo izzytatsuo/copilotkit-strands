@@ -52,9 +52,24 @@ export interface JoinedRow {
   vovi_current_scheduled: string | null;
   vovi_soft_cap: string | null;
   vovi_hard_cap: string | null;
+  // Day classifier columns (from match date)
+  bucket_lower: string | null;
+  bucket_upper: string | null;
+  peak_to_eod_drop_pct: string | null;
+  constrained_after_target: string | null;
+  sched_at_max_drop: string | null;
+  max_drop_4hr: string | null;
+  had_desched_notify: string | null;
+  had_desched_execute: string | null;
+  // Flatline flags (from target date)
+  flatline_execute: string | null;
+  flatline_notify: string | null;
   execution_ts: string | null;
-  // Derived field for tab grouping
+  // Derived/computed fields
+  flags: string | null;
   tab_group: string;
+  // Parsed from flags string for filtering
+  _flags: string[];
 }
 
 export interface PbaRow {
@@ -69,4 +84,12 @@ export interface PbaRow {
   pba_hard_cap: number;
   pba_slammed: number;
   pba_cap_utilization: number;
+  // Cumulative fan chart fields (target only)
+  pba_cumulative_median: number | null;
+  pba_cumulative_median_adj: number | null;
+  pba_p10: number | null;
+  pba_p30: number | null;
+  pba_p50: number | null;
+  pba_p70: number | null;
+  pba_p90: number | null;
 }

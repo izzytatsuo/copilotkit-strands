@@ -21,14 +21,14 @@
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 13px;
-  width: 220px;
+  width: 48px;
   outline: none;
   transition: border-color 0.15s;
 }
 
 .searchInput:focus {
-  border-color: #4a90d9;
-  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.15);
+  border-color: #000000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
 .tabs {
@@ -54,13 +54,13 @@
 }
 
 .tabActive {
-  background: #4a90d9;
+  background: #000000;
   color: #fff;
-  border-color: #4a90d9;
+  border-color: #000000;
 }
 
 .tabActive:hover {
-  background: #3a7bc8;
+  background: #1a1a1a;
 }
 
 .tabCount {

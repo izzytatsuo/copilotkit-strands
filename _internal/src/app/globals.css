@@ -23,6 +23,11 @@ html {
   height: 100%;
 }
 
+/* Hide CopilotKit dev console version banner */
+.copilotKitVersionInfo {
+  display: none !important;
+}
+
 /* AG Grid Theme Overrides */
 .ag-theme-alpine {
   --ag-row-height: 32px;
@@ -32,9 +37,9 @@ html {
   --ag-header-background-color: #f1f3f5;
   --ag-header-foreground-color: #343a40;
   --ag-odd-row-background-color: #f8f9fa;
-  --ag-row-hover-color: #e7f1ff;
-  --ag-selected-row-background-color: #d0e4ff;
-  --ag-range-selection-border-color: #4a90d9;
+  --ag-row-hover-color: #f0f0f0;
+  --ag-selected-row-background-color: #e0e0e0;
+  --ag-range-selection-border-color: #000000;
 }
 
 .ag-theme-alpine .ag-header-cell-label {

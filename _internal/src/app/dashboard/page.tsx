@@ -13,7 +13,7 @@ import { WeatherCard } from "@/components/weather";
 import ForecastDashboard from "@/components/inventory/ForecastDashboard";
 
 export default function DashboardPage() {
-  const [themeColor, setThemeColor] = useState("#6366f1");
+  const [themeColor, setThemeColor] = useState("#000000");
 
   useFrontendTool({
     name: "set_theme_color",
