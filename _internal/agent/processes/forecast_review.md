@@ -13,8 +13,63 @@
 |-----------|----------|-------------|
 | `tz_bucket` | **Yes** | Timezone bucket (Eastern, Central, Mountain, Pacific, etc.) |
 | `biz` | No | Business line (default: AMZL) |
+| `vovi_start_utc` | No | VOVI modified_time filter start, UTC epoch ms (default: 0 — all VOVI) |
+| `vovi_end_utc` | No | VOVI modified_time filter end, UTC epoch ms (default: now — all VOVI) |
+| `setup_ctx_dir` | No | Path to a previous setup context directory to import confidence data (default: None — no setup confidence) |
 
 **If tz_bucket is not provided, ask the user which timezone bucket to run.**
+
+---
+
+## Step 0: Find Setup Context (VOVI Start Time + Confidence Data)
+
+Before executing, find the latest forecast **setup** run for the matching timezone bucket. This provides two things:
+1. **VOVI start time** — so only modifications made after setup are included
+2. **Setup confidence data** — pre-publish `automated_confidence` and `confidence_anomaly` for comparison
+
+Context directories live at the workspace root under `data/contexts/` and are named `YYYYMMDD_HHMMSS_forecast_{tz_bucket}`.
+
+Run this Python snippet to find the latest setup context:
+
+```python
+import os, re
+from datetime import datetime, timezone
+from pathlib import Path
+
+contexts_path = os.path.join(os.environ.get('WORKSPACE_ROOT', os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))), 'data', 'contexts')
+# Alternative: just use the absolute path on this machine
+# contexts_path = r'C:\Users\admsia\copilotkit-strands\data\contexts'
+
+tz_suffix = f'forecast_{tz_bucket.lower()}'
+dirs = sorted([
+    d for d in os.listdir(contexts_path)
+    if d.startswith('20') and tz_suffix in d and 'forecast_review' not in d
+])
+if dirs:
+    latest = dirs[-1]
+    latest_path = os.path.join(contexts_path, latest)
+    # Parse YYYYMMDD_HHMMSS from directory name
+    m = re.match(r'(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})_', latest)
+    if m:
+        dt = datetime(int(m[1]), int(m[2]), int(m[3]), int(m[4]), int(m[5]), int(m[6]), tzinfo=timezone.utc)
+        epoch_ms = int(dt.timestamp() * 1000)
+        has_joined = Path(latest_path, 'joined.csv').exists()
+        print(f'Latest setup: {latest} -> vovi_start_utc={epoch_ms}, joined.csv={has_joined}')
+```
+
+If a setup directory is found, present **both** values to the user in one prompt:
+
+> "The latest setup run for **{tz_bucket}** was `{dir_name}` (`{YYYY-MM-DD HH:MM:SS} UTC`). I'll use this as the VOVI start time and import its confidence data for comparison. Does that work, or would you like a different start time?"
+
+Then set variables:
+- `vovi_start_utc` = epoch_ms from the directory timestamp
+- `setup_ctx_dir` = full path to the setup context directory (if `joined.csv` exists in it), otherwise `None`
+
+**Edge cases:**
+- If `joined.csv` is missing in the setup directory: use for `vovi_start_utc` only, set `setup_ctx_dir=None`
+- If no setup directory found at all: `vovi_start_utc=0`, `setup_ctx_dir=None`
+
+Wait for the user to approve or provide an alternative before proceeding.
 
 ---
 
@@ -23,7 +78,7 @@
 Use the `run_notebook` tool:
 
 ```python
-run_notebook("forecast_review.ipynb", variables={"tz_bucket": "{timezone}", "biz": "AMZL"})
+run_notebook("forecast_review.ipynb", variables={"tz_bucket": "{timezone}", "biz": "AMZL", "vovi_start_utc": {epoch_ms}, "setup_ctx_dir": "{setup_ctx_dir_or_None}"})
 ```
 
 The notebook will:

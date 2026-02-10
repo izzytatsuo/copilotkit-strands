@@ -2,11 +2,12 @@
 Context ID Generator UDF
 
 Generates ctx_id in format: YYYYMMDD_HHMMSS_taskname or YYYYMMDD_HHMMSS_uuid8
+Timestamps are UTC so context directories sort chronologically and epoch parsing is straightforward.
 
 Usage:
-    SELECT generate_ctx_id('')              -- 20260109_143245_a3f2b1c9
-    SELECT generate_ctx_id('fcstsetup')     -- 20260109_143245_fcstsetup
-    SELECT generate_ctx_id('vovi_load')     -- 20260109_143245_vovi_load
+    SELECT generate_ctx_id('')              -- 20260109_214532_a3f2b1c9
+    SELECT generate_ctx_id('fcstsetup')     -- 20260109_214532_fcstsetup
+    SELECT generate_ctx_id('vovi_load')     -- 20260109_214532_vovi_load
 """
 import uuid
 from datetime import datetime
@@ -25,9 +26,8 @@ def generate_ctx_id(task_name: str = "") -> str:
             - With task_name: 20260109_143245_fcstsetup
             - Without: 20260109_143245_a3f2b1c9
     """
-    # Get current time in Pacific
-    pacific = pytz.timezone('US/Pacific')
-    now = datetime.now(pacific)
+    # Get current time in UTC
+    now = datetime.now(pytz.utc)
     timestamp = now.strftime('%Y%m%d_%H%M%S')
 
     # Use task_name or generate uuid suffix

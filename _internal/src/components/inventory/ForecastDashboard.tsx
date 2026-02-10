@@ -36,9 +36,17 @@ const columnDefs: ColDef<JoinedRow>[] = [
   { field: "flags", headerName: "Flags", width: 110, minWidth: 110, maxWidth: 110, pinned: "left" },
   { field: "available_inputs", headerName: "Inputs", width: 90 },
   { field: "automated_confidence", headerName: "Confidence", width: 100 },
+  { field: "setup_automated_confidence", headerName: "Setup Conf", width: 100 },
+  { field: "confidence_changed", headerName: "Conf Chg", width: 90 },
   {
     field: "automated_uncapped_slam_forecast",
     headerName: "Automated",
+    width: 150,
+    type: "numericColumn",
+  },
+  {
+    field: "weekly_uncapped_slam_forecast",
+    headerName: "Weekly",
     width: 150,
     type: "numericColumn",
   },
@@ -59,6 +67,16 @@ const columnDefs: ColDef<JoinedRow>[] = [
   { field: "had_desched_execute", headerName: "Desched Exec", width: 110, type: "numericColumn" },
   { field: "flatline_execute", headerName: "Flatline Exec", width: 110, type: "numericColumn" },
   { field: "flatline_notify", headerName: "Flatline Notify", width: 110, type: "numericColumn" },
+  { field: "auto_vs_p10", headerName: "A/P10", width: 80, type: "numericColumn" },
+  { field: "auto_vs_p30", headerName: "A/P30", width: 80, type: "numericColumn" },
+  { field: "auto_vs_p50", headerName: "A/P50", width: 80, type: "numericColumn" },
+  { field: "auto_vs_p70", headerName: "A/P70", width: 80, type: "numericColumn" },
+  { field: "auto_vs_p90", headerName: "A/P90", width: 80, type: "numericColumn" },
+  { field: "vovi_vs_p10", headerName: "V/P10", width: 80, type: "numericColumn" },
+  { field: "vovi_vs_p30", headerName: "V/P30", width: 80, type: "numericColumn" },
+  { field: "vovi_vs_p50", headerName: "V/P50", width: 80, type: "numericColumn" },
+  { field: "vovi_vs_p70", headerName: "V/P70", width: 80, type: "numericColumn" },
+  { field: "vovi_vs_p90", headerName: "V/P90", width: 80, type: "numericColumn" },
 ];
 
 // ── Chart Trace Builder ───────────────────────────────────────────────
@@ -88,9 +106,10 @@ function buildTraces(pbaData: PbaRow[], gridKey: string): BuildResult {
   const filtered = pbaData.filter((r) => r.grid_key === gridKey);
   const traces: Array<Record<string, unknown>> = [];
 
-  // Build sorted category order from ALL rows (target + match) by horizon_rank
+  // Build sorted category order from target + match rows by horizon_rank
   const horizonMap = new Map<string, number>();
   for (const r of filtered) {
+    if (r.pba_type === "vp_automated" || r.pba_type === "vp_weekly" || r.pba_type === "vp_vovi") continue;
     const existing = horizonMap.get(r.pba_dhm_horizon);
     if (existing === undefined || r.pba_horizon_rank < existing) {
       horizonMap.set(r.pba_dhm_horizon, r.pba_horizon_rank);
@@ -220,6 +239,29 @@ function buildTraces(pbaData: PbaRow[], gridKey: string): BuildResult {
           line: { color: "#1565C0", width: 2, dash: "solid" },
         });
       }
+    }
+  }
+
+  // VP forecast reference markers (single points at max horizon)
+  const markerConfigs: { type: "vp_automated" | "vp_weekly" | "vp_vovi"; name: string; color: string; symbol: string; hidden: boolean }[] = [
+    { type: "vp_automated", name: "auto fcst", color: "#E65100", symbol: "diamond", hidden: false },
+    { type: "vp_weekly", name: "weekly fcst", color: "#2E7D32", symbol: "diamond", hidden: true },
+    { type: "vp_vovi", name: "vovi fcst", color: "#1565C0", symbol: "cross", hidden: false },
+  ];
+  for (const mc of markerConfigs) {
+    const row = filtered.find((r) => r.pba_type === mc.type);
+    if (row) {
+      traces.push({
+        x: [row.pba_dhm_horizon],
+        y: [row.pba_scheduled],
+        name: mc.name,
+        legendgroup: mc.name,
+        showlegend: true,
+        type: "scatter",
+        mode: "markers",
+        visible: mc.hidden ? "legendonly" : true,
+        marker: { color: mc.color, size: 10, symbol: mc.symbol },
+      });
     }
   }
 
@@ -358,6 +400,10 @@ export default function ForecastDashboard({
   const tabGroups = useMemo(() => {
     const flagCounts = new Map<string, number>();
     const anomalyCounts = new Map<string, number>();
+    let underCapCount = 0;
+    let setupAnomalyCount = 0;
+    let confChangedCount = 0;
+    let hasSetupData = false;
     for (const row of gridData) {
       for (const f of row._flags ?? []) {
         flagCounts.set(f, (flagCounts.get(f) ?? 0) + 1);
@@ -368,6 +414,15 @@ export default function ForecastDashboard({
       } else {
         anomalyCounts.set("anomaly:flagged", (anomalyCounts.get("anomaly:flagged") ?? 0) + 1);
       }
+      const auto = row.automated_uncapped_slam_forecast != null ? parseFloat(String(row.automated_uncapped_slam_forecast)) : NaN;
+      const cap = row.atrops_soft_cap != null ? parseFloat(String(row.atrops_soft_cap)) : NaN;
+      if (!isNaN(auto) && !isNaN(cap) && cap > 0 && auto < cap) underCapCount++;
+      // Setup confidence tabs
+      if (row.setup_confidence_anomaly != null) {
+        hasSetupData = true;
+        if (String(row.setup_confidence_anomaly).toLowerCase() !== "false") setupAnomalyCount++;
+      }
+      if (row.confidence_changed === "true") confChangedCount++;
     }
     return [
       { label: "All", value: "all", count: gridData.length },
@@ -375,9 +430,14 @@ export default function ForecastDashboard({
       ...Array.from(flagCounts.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([value, count]) => ({ label: value, value: `flag:${value}`, count })),
+      // Forecast vs cap tab
+      ...(underCapCount > 0 ? [{ label: "Auto < Cap", value: "under_cap", count: underCapCount }] : []),
       // Confidence anomaly tabs
       ...(anomalyCounts.has("anomaly:flagged") ? [{ label: "Anomaly", value: "anomaly:flagged", count: anomalyCounts.get("anomaly:flagged")! }] : []),
       ...(anomalyCounts.has("anomaly:false") ? [{ label: "No Anomaly", value: "anomaly:false", count: anomalyCounts.get("anomaly:false")! }] : []),
+      // Setup confidence tabs (conditional — only when setup data loaded)
+      ...(hasSetupData && setupAnomalyCount > 0 ? [{ label: "Setup Anomaly", value: "setup_anomaly", count: setupAnomalyCount }] : []),
+      ...(hasSetupData && confChangedCount > 0 ? [{ label: "Conf Changed", value: "conf_changed", count: confChangedCount }] : []),
     ];
   }, [gridData]);
 
@@ -394,6 +454,19 @@ export default function ForecastDashboard({
     }
     if (activeTab === "anomaly:false") {
       return gridData.filter((r) => String(r.confidence_anomaly).toLowerCase() === "false");
+    }
+    if (activeTab === "under_cap") {
+      return gridData.filter((r) => {
+        const auto = r.automated_uncapped_slam_forecast != null ? parseFloat(String(r.automated_uncapped_slam_forecast)) : NaN;
+        const cap = r.atrops_soft_cap != null ? parseFloat(String(r.atrops_soft_cap)) : NaN;
+        return !isNaN(auto) && !isNaN(cap) && cap > 0 && auto < cap;
+      });
+    }
+    if (activeTab === "setup_anomaly") {
+      return gridData.filter((r) => r.setup_confidence_anomaly != null && String(r.setup_confidence_anomaly).toLowerCase() !== "false");
+    }
+    if (activeTab === "conf_changed") {
+      return gridData.filter((r) => r.confidence_changed === "true");
     }
     return gridData.filter((r) => r.tab_group === activeTab);
   }, [gridData, activeTab]);

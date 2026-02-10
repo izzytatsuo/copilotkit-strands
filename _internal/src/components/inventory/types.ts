@@ -32,6 +32,10 @@ export interface JoinedRow {
   net_volume_adjustments: string | null;
   vovi_adjustment: string | null;
   confidence_anomaly: string | null;
+  // Setup confidence (from previous setup run)
+  setup_automated_confidence: string | null;
+  setup_confidence_anomaly: string | null;
+  confidence_changed: string | null;
   automated_uncapped_slam_forecast: string | null;
   weekly_uncapped_slam_forecast: string | null;
   earlies_expected: string | null;
@@ -52,6 +56,7 @@ export interface JoinedRow {
   vovi_current_scheduled: string | null;
   vovi_soft_cap: string | null;
   vovi_hard_cap: string | null;
+  vovi_match_date: string | null;
   // Day classifier columns (from match date)
   bucket_lower: string | null;
   bucket_upper: string | null;
@@ -64,6 +69,18 @@ export interface JoinedRow {
   // Flatline flags (from target date)
   flatline_execute: string | null;
   flatline_notify: string | null;
+  // Automated vs PBA quantile ratios
+  auto_vs_p10: string | null;
+  auto_vs_p30: string | null;
+  auto_vs_p50: string | null;
+  auto_vs_p70: string | null;
+  auto_vs_p90: string | null;
+  // VOVI vs PBA quantile ratios
+  vovi_vs_p10: string | null;
+  vovi_vs_p30: string | null;
+  vovi_vs_p50: string | null;
+  vovi_vs_p70: string | null;
+  vovi_vs_p90: string | null;
   execution_ts: string | null;
   // Derived/computed fields
   flags: string | null;
@@ -74,7 +91,7 @@ export interface JoinedRow {
 
 export interface PbaRow {
   grid_key: string;
-  pba_type: "target" | "match";
+  pba_type: "target" | "match" | "vp_automated" | "vp_weekly" | "vp_vovi";
   pba_ofd_date: string;
   pba_dhm_horizon: string;
   pba_bi_hourly_local: string;
