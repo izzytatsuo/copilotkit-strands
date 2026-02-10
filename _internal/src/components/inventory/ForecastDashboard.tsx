@@ -24,91 +24,21 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
 const columnDefs: ColDef<JoinedRow>[] = [
   { field: "station", headerName: "Station", width: 100, pinned: "left" },
-  { field: "cycle", headerName: "Cycle", width: 80 },
   { field: "cpts_local", headerName: "CPT", width: 70 },
-  { field: "available_inputs", headerName: "Inputs", width: 90 },
-  { field: "forecast_type", headerName: "Fcst Type", width: 95 },
   { field: "automated_confidence", headerName: "Confidence", width: 100 },
   {
-    field: "auto_forecast_util",
-    headerName: "Auto Util",
-    width: 95,
-    type: "numericColumn",
-    valueFormatter: (p) =>
-      p.value != null ? (p.value * 100).toFixed(1) + "%" : "",
-  },
-  {
-    field: "util",
-    headerName: "Util",
-    width: 80,
-    type: "numericColumn",
-    valueFormatter: (p) =>
-      p.value != null ? (p.value * 100).toFixed(1) + "%" : "",
-  },
-  {
-    field: "uncapped_slam_forecast",
-    headerName: "Uncapped Fcst",
-    width: 115,
+    field: "automated_uncapped_slam_forecast",
+    headerName: "Auto Uncapped Fcst",
+    width: 150,
     type: "numericColumn",
   },
   {
-    field: "capped_slam_forecast",
-    headerName: "Capped Fcst",
-    width: 110,
+    field: "vovi_uncapped_slam_forecast",
+    headerName: "VOVI Uncapped Fcst",
+    width: 150,
     type: "numericColumn",
   },
-  {
-    field: "atrops_soft_cap",
-    headerName: "Soft Cap",
-    width: 95,
-    type: "numericColumn",
-  },
-  {
-    field: "atrops_hard_cap",
-    headerName: "Hard Cap",
-    width: 95,
-    type: "numericColumn",
-  },
-  {
-    field: "latest_deployed_cap",
-    headerName: "Deploy Cap",
-    width: 105,
-    type: "numericColumn",
-  },
-  {
-    field: "current_slam",
-    headerName: "Cur Slam",
-    width: 95,
-    type: "numericColumn",
-  },
-  {
-    field: "current_schedule",
-    headerName: "Cur Sched",
-    width: 100,
-    type: "numericColumn",
-  },
-  {
-    field: "vovi_modified_user",
-    headerName: "VOVI User",
-    width: 100,
-  },
-  {
-    field: "vovi_adjusted_forecast",
-    headerName: "VOVI Adj Fcst",
-    width: 115,
-    type: "numericColumn",
-  },
-  {
-    field: "vovi_original_forecast",
-    headerName: "VOVI Orig Fcst",
-    width: 120,
-    type: "numericColumn",
-  },
-  {
-    field: "vovi_forecast_status",
-    headerName: "VOVI Status",
-    width: 105,
-  },
+  { field: "vovi_modified_user", headerName: "Modified User", width: 120 },
 ];
 
 // ── Chart Trace Builder ───────────────────────────────────────────────
