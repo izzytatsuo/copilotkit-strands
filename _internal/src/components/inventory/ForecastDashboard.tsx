@@ -25,6 +25,7 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 const columnDefs: ColDef<JoinedRow>[] = [
   { field: "station", headerName: "Station", width: 100, pinned: "left" },
   { field: "cpts_local", headerName: "CPT", width: 70 },
+  { field: "available_inputs", headerName: "Inputs", width: 90 },
   { field: "automated_confidence", headerName: "Confidence", width: 100 },
   {
     field: "automated_uncapped_slam_forecast",
@@ -53,10 +54,10 @@ interface TraceConfig {
 }
 
 const TRACE_CONFIGS: TraceConfig[] = [
-  { field: "pba_scheduled", name: "Scheduled", color: "#000000" },
-  { field: "pba_slammed", name: "Slammed", color: "#00897B", hidden: true },
-  { field: "pba_soft_cap", name: "Soft Cap", color: "#000000", dash: "4px,3px", isCap: true },
-  { field: "pba_hard_cap", name: "Hard Cap", color: "#000000", isCap: true },
+  { field: "pba_scheduled", name: "sch", color: "#000000" },
+  { field: "pba_slammed", name: "slm", color: "#00897B", hidden: true },
+  { field: "pba_soft_cap", name: "cap", color: "#000000", dash: "4px,3px", isCap: true },
+  { field: "pba_hard_cap", name: "cap", color: "#000000", isCap: true },
 ];
 
 function buildTraces(pbaData: PbaRow[], gridKey: string) {
@@ -71,12 +72,24 @@ function buildTraces(pbaData: PbaRow[], gridKey: string) {
     if (rows.length === 0) continue;
 
     const x = rows.map((r) => r.pba_dhm_horizon);
-    const suffix = pbaType === "target" ? " (Target)" : " (Match)";
+    const prefix = pbaType === "match" ? "match-" : "";
+
+    // Link soft cap and hard cap into one legend group
     for (const cfg of TRACE_CONFIGS) {
+      const isHardCap = cfg.field === "pba_hard_cap";
+      const isSoftCap = cfg.field === "pba_soft_cap";
+      const legendGroup = (isSoftCap || isHardCap)
+        ? `${prefix}cap`
+        : `${prefix}${cfg.name}`;
+
       traces.push({
         x,
         y: rows.map((r) => r[cfg.field] as number),
-        name: cfg.name + suffix,
+        name: isHardCap
+          ? `${prefix}${cfg.name} (hard)`
+          : `${prefix}${cfg.name}`,
+        legendgroup: legendGroup,
+        showlegend: !isHardCap,
         type: "scatter",
         mode: "lines",
         visible: cfg.hidden ? "legendonly" : true,
