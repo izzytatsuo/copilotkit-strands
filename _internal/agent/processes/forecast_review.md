@@ -1,8 +1,8 @@
-# Forecast Setup Process
+# Forecast Review Process
 
 ## Overview
-**Purpose:** Pull VP/CT data, VOVI forecasts, pipeline artifacts, and intraday PBA, then join into a single dataset for forecast review.
-**When to use:** When user says "run forecast setup", "forecast setup", or asks to prepare forecast data for review.
+**Purpose:** Post-publish review. Pull published VP data (local time CPTs), VOVI forecasts, pipeline artifacts, and intraday PBA, then join into a single dataset for review.
+**When to use:** When user says "run forecast review", "forecast review", "review published", or asks to review published forecast data.
 **Output:** `joined.csv` with site list + VP + VOVI outer join, plus pipeline artifacts and PBA data saved to context directory.
 
 ---
@@ -23,18 +23,18 @@
 Use the `run_notebook` tool:
 
 ```python
-run_notebook("forecast_setup.ipynb", variables={"tz_bucket": "{timezone}", "biz": "AMZL"})
+run_notebook("forecast_review.ipynb", variables={"tz_bucket": "{timezone}", "biz": "AMZL"})
 ```
 
 The notebook will:
 1. Auto-calculate target date (tomorrow Pacific)
 2. Fetch CT metadata and build timezone bucket map
 3. Filter site list to stations in the specified timezone bucket
-4. Build VP URLs and fetch via batch HTTP
+4. Build published VP URLs and fetch via batch HTTP
 5. Fetch VOVI forecasts (US + CA, AMZL, premium)
 6. Download latest pipeline artifacts from S3
 7. Download latest intraday PBA data from S3
-8. Pivot VP data (long to wide with util columns and grid keys)
+8. Pivot VP data (local CPTs converted to UTC via station timezone, util columns, grid keys)
 9. Join site list + VP + VOVI with `available_inputs` flag
 10. Save `joined.csv` and `visual.json` to context directory
 
@@ -53,6 +53,7 @@ Ask if the user wants to:
 - Refresh the dashboard with the new data
 - View a sample of the joined data
 - Check specific stations
+- Compare to unpublished (forecast_setup) results
 
 ---
 
@@ -71,8 +72,8 @@ Ask if the user wants to:
 
 ## Example Usage
 
-User: "run forecast setup"
+User: "run forecast review"
 -> Ask for timezone bucket, then execute
 
-User: "run forecast setup for Eastern"
--> Execute directly with tz_bucket=Eastern
+User: "forecast review for Mountain"
+-> Execute directly with tz_bucket=Mountain

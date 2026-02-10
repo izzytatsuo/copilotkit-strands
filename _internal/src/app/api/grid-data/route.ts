@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+
 // Serve joined.csv from the latest forecast context directory
 const CONTEXTS_DIR = path.resolve(
   process.cwd(),
