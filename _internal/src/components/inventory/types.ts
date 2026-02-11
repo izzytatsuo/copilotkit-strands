@@ -85,6 +85,7 @@ export interface JoinedRow {
   execution_ts: string | null;
   // Derived/computed fields
   flags: string | null;
+  severity: number | null;
   tab_group: string;
   // Parsed from flags string for filtering
   _flags: string[];

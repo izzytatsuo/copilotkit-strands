@@ -32,7 +32,8 @@ const columnDefs: ColDef<JoinedRow>[] = [
     pinned: "left",
     valueFormatter: (params) => params.value ? String(params.value).slice(0, 5) : "",
   },
-  { field: "flags", headerName: "Flags", width: 140, minWidth: 60, pinned: "left" },
+  { field: "severity", headerName: "Sev", width: 70, minWidth: 50, pinned: "left", type: "numericColumn" },
+  { field: "flags", headerName: "Flags", width: 140 },
   { field: "available_inputs", headerName: "Inputs", width: 90 },
   { field: "automated_confidence", headerName: "Confidence", width: 100 },
   { field: "setup_automated_confidence", headerName: "Setup Conf", width: 100 },
@@ -297,6 +298,7 @@ function parseGridCsv(text: string): JoinedRow[] {
     if (obj.auto_forecast_util != null)
       obj.auto_forecast_util = parseFloat(obj.auto_forecast_util as string);
     if (obj.util != null) obj.util = parseFloat(obj.util as string);
+    if (obj.severity != null) obj.severity = parseInt(obj.severity as string, 10);
     // Derive tab_group, parse flags
     const row = obj as unknown as JoinedRow;
     row.tab_group = deriveTabGroup(row);
@@ -367,6 +369,7 @@ export default function ForecastDashboard({
               const json = await gridResp.value.json();
               const rows = (json as JoinedRow[]).map((r) => ({
                 ...r,
+                severity: r.severity != null ? Number(r.severity) : null,
                 tab_group: deriveTabGroup(r),
                 _flags: parseFlags(r),
               }));
@@ -407,46 +410,30 @@ export default function ForecastDashboard({
   // ── Tabs ──────────────────────────────────────────────────────────
 
   const tabGroups = useMemo(() => {
-    const flagCounts = new Map<string, number>();
-    const anomalyCounts = new Map<string, number>();
-    let underCapCount = 0;
-    let setupAnomalyCount = 0;
+    let anomalyCount = 0;
+    let noAnomalyCount = 0;
     let confChangedCount = 0;
-    let hasSetupData = false;
+    const sevCounts = new Map<number, number>();
     for (const row of gridData) {
-      for (const f of row._flags ?? []) {
-        flagCounts.set(f, (flagCounts.get(f) ?? 0) + 1);
-      }
       const val = row.confidence_anomaly != null ? String(row.confidence_anomaly).toLowerCase() : null;
       if (val === "false") {
-        anomalyCounts.set("anomaly:false", (anomalyCounts.get("anomaly:false") ?? 0) + 1);
+        noAnomalyCount++;
       } else {
-        anomalyCounts.set("anomaly:flagged", (anomalyCounts.get("anomaly:flagged") ?? 0) + 1);
-      }
-      const auto = row.automated_uncapped_slam_forecast != null ? parseFloat(String(row.automated_uncapped_slam_forecast)) : NaN;
-      const cap = row.atrops_soft_cap != null ? parseFloat(String(row.atrops_soft_cap)) : NaN;
-      if (!isNaN(auto) && !isNaN(cap) && cap > 0 && auto < cap) underCapCount++;
-      // Setup confidence tabs
-      if (row.setup_confidence_anomaly != null) {
-        hasSetupData = true;
-        if (String(row.setup_confidence_anomaly).toLowerCase() !== "false") setupAnomalyCount++;
+        anomalyCount++;
       }
       if (row.confidence_changed === "true") confChangedCount++;
+      if (row.severity != null) {
+        sevCounts.set(row.severity, (sevCounts.get(row.severity) ?? 0) + 1);
+      }
     }
     return [
       { label: "All", value: "all", count: gridData.length },
-      // Flag tabs
-      ...Array.from(flagCounts.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([value, count]) => ({ label: value, value: `flag:${value}`, count })),
-      // Forecast vs cap tab
-      ...(underCapCount > 0 ? [{ label: "Auto < Cap", value: "under_cap", count: underCapCount }] : []),
-      // Confidence anomaly tabs
-      ...(anomalyCounts.has("anomaly:flagged") ? [{ label: "Anomaly", value: "anomaly:flagged", count: anomalyCounts.get("anomaly:flagged")! }] : []),
-      ...(anomalyCounts.has("anomaly:false") ? [{ label: "No Anomaly", value: "anomaly:false", count: anomalyCounts.get("anomaly:false")! }] : []),
-      // Setup confidence tabs (conditional — only when setup data loaded)
-      ...(hasSetupData && setupAnomalyCount > 0 ? [{ label: "Setup Anomaly", value: "setup_anomaly", count: setupAnomalyCount }] : []),
-      ...(hasSetupData && confChangedCount > 0 ? [{ label: "Conf Changed", value: "conf_changed", count: confChangedCount }] : []),
+      { label: "Manual", value: "anomaly:flagged", count: anomalyCount },
+      { label: "Automated", value: "anomaly:false", count: noAnomalyCount },
+      ...(confChangedCount > 0 ? [{ label: "Conf. !=", value: "conf_changed", count: confChangedCount }] : []),
+      ...Array.from(sevCounts.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([sev, count]) => ({ label: `${sev}`, value: `sev:${sev}`, count })),
     ];
   }, [gridData]);
 
@@ -454,30 +441,20 @@ export default function ForecastDashboard({
 
   const filteredData = useMemo(() => {
     if (activeTab === "all") return gridData;
-    if (activeTab.startsWith("flag:")) {
-      const flag = activeTab.slice(5);
-      return gridData.filter((r) => r._flags?.includes(flag));
-    }
     if (activeTab === "anomaly:flagged") {
       return gridData.filter((r) => String(r.confidence_anomaly).toLowerCase() !== "false");
     }
     if (activeTab === "anomaly:false") {
       return gridData.filter((r) => String(r.confidence_anomaly).toLowerCase() === "false");
     }
-    if (activeTab === "under_cap") {
-      return gridData.filter((r) => {
-        const auto = r.automated_uncapped_slam_forecast != null ? parseFloat(String(r.automated_uncapped_slam_forecast)) : NaN;
-        const cap = r.atrops_soft_cap != null ? parseFloat(String(r.atrops_soft_cap)) : NaN;
-        return !isNaN(auto) && !isNaN(cap) && cap > 0 && auto < cap;
-      });
-    }
-    if (activeTab === "setup_anomaly") {
-      return gridData.filter((r) => r.setup_confidence_anomaly != null && String(r.setup_confidence_anomaly).toLowerCase() !== "false");
-    }
     if (activeTab === "conf_changed") {
       return gridData.filter((r) => r.confidence_changed === "true");
     }
-    return gridData.filter((r) => r.tab_group === activeTab);
+    if (activeTab.startsWith("sev:")) {
+      const sev = parseInt(activeTab.slice(4), 10);
+      return gridData.filter((r) => r.severity === sev);
+    }
+    return gridData;
   }, [gridData, activeTab]);
 
   // ── Grid Events ───────────────────────────────────────────────────
