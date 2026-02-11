@@ -50,6 +50,8 @@ const columnDefs: ColDef<JoinedRow>[] = [
     width: 150,
     type: "numericColumn",
   },
+  { field: "auto_forecast_util", headerName: "Auto Util", width: 95, type: "numericColumn" },
+  { field: "util", headerName: "Util", width: 80, type: "numericColumn" },
   {
     field: "vovi_uncapped_slam_forecast",
     headerName: "VOVI (VP)",
