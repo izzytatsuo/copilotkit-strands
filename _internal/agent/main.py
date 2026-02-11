@@ -96,6 +96,20 @@ def set_theme_color(theme_color: str):
 
 
 @tool
+def update_layout(split: str = "horizontal", chart_pct: int = 45):
+    """Update the dashboard layout.
+
+    This is a frontend tool - it returns None as the actual
+    execution happens on the frontend via useFrontendTool.
+
+    Args:
+        split: Layout direction - 'horizontal' (chart top, grid bottom) or 'vertical' (chart right, grid left)
+        chart_pct: Chart panel size as percentage (10-90), remainder goes to grid
+    """
+    return None
+
+
+@tool
 def refresh_dashboard():
     """Refresh the dashboard grid and chart data after a notebook run completes.
 
@@ -242,7 +256,7 @@ strands_agent = Agent(
     system_prompt=system_prompt,
     tools=[
         # Existing tools
-        update_proverbs, get_weather, set_theme_color, refresh_dashboard,
+        update_proverbs, get_weather, set_theme_color, update_layout, refresh_dashboard,
         # DuckDB ETL tools
         etl_provider.etl,
         etl_provider.run_notebook,

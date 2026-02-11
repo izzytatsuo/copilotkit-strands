@@ -59,13 +59,34 @@ export default function DashboardPage() {
   );
 }
 
+interface LayoutConfig {
+  split: "horizontal" | "vertical";
+  chartPct: number;
+}
+
 function DashboardContent({ themeColor }: { themeColor: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [layout, setLayout] = useState<LayoutConfig>({ split: "horizontal", chartPct: 45 });
 
   const { state } = useCoAgent({
     name: "strands_agent",
     initialState: {
       proverbs: ["mountain", "amzl"],
+    },
+  });
+
+  useFrontendTool({
+    name: "update_layout",
+    description: "Update the dashboard layout direction and panel sizes.",
+    parameters: [
+      { name: "split", description: "Layout direction: 'horizontal' (chart top, grid bottom) or 'vertical' (chart right, grid left)", required: false },
+      { name: "chart_pct", description: "Chart panel size as percentage (10-90)", required: false },
+    ],
+    handler({ split, chart_pct }: { split?: string; chart_pct?: number }) {
+      setLayout((prev) => ({
+        split: split === "vertical" ? "vertical" : split === "horizontal" ? "horizontal" : prev.split,
+        chartPct: chart_pct != null ? Math.max(10, Math.min(90, chart_pct)) : prev.chartPct,
+      }));
     },
   });
 
@@ -110,7 +131,7 @@ function DashboardContent({ themeColor }: { themeColor: string }) {
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      <ForecastDashboard refreshKey={refreshKey} />
+      <ForecastDashboard refreshKey={refreshKey} layout={layout} />
     </div>
   );
 }

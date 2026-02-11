@@ -98,19 +98,20 @@
   overflow: hidden;
 }
 
-.gridPanel {
-  width: 40%;
-  min-width: 300px;
-  border-right: 1px solid #dee2e6;
-  display: flex;
-  flex-direction: column;
-}
-
 .chartPanel {
-  width: 60%;
+  min-height: 150px;
+  min-width: 200px;
   display: flex;
   flex-direction: column;
   background: #fff;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.gridPanel {
+  min-height: 150px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
 .chartPlaceholder {

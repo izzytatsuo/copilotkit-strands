@@ -308,16 +308,23 @@ function parseGridCsv(text: string): JoinedRow[] {
 
 // ── Main Component ────────────────────────────────────────────────────
 
+interface LayoutConfig {
+  split: "horizontal" | "vertical";
+  chartPct: number;
+}
+
 interface ForecastDashboardProps {
   gridDataUrl?: string;
   visualDataUrl?: string;
   refreshKey?: number;
+  layout?: LayoutConfig;
 }
 
 export default function ForecastDashboard({
   gridDataUrl = "/api/grid-data",
   visualDataUrl = "/api/visual-data",
   refreshKey = 0,
+  layout = { split: "horizontal", chartPct: 45 },
 }: ForecastDashboardProps) {
   const gridRef = useRef<AgGridReact<JoinedRow>>(null);
   const [gridApi, setGridApi] = useState<GridApi<JoinedRow> | null>(null);
@@ -556,33 +563,13 @@ export default function ForecastDashboard({
         </button>
       </div>
 
-      {/* Split: Grid (40%) | Chart (60%) */}
-      <div className={styles.splitContainer}>
-        {/* Grid Panel */}
-        <div className={styles.gridPanel}>
-          <div className="ag-theme-alpine" style={{ flex: 1 }}>
-            <AgGridReact<JoinedRow>
-              ref={gridRef}
-              rowData={filteredData}
-              columnDefs={columnDefs}
-              defaultColDef={{
-                sortable: true,
-                resizable: true,
-                filter: false,
-              }}
-              rowSelection="single"
-              onGridReady={onGridReady}
-              onRowClicked={onRowClicked}
-              animateRows={false}
-              getRowId={(params) =>
-                params.data.grid_key_local ?? params.data.station
-              }
-            />
-          </div>
-        </div>
-
+      {/* Split: Chart + Grid */}
+      <div className={styles.splitContainer} style={{ flexDirection: layout.split === "vertical" ? "row" : "column" }}>
         {/* Chart Panel */}
-        <div className={styles.chartPanel}>
+        <div className={styles.chartPanel} style={layout.split === "vertical"
+          ? { width: `${layout.chartPct}%`, height: "100%", borderBottom: "none", borderLeft: "1px solid #dee2e6", order: 0 }
+          : { height: `${layout.chartPct}%`, width: "100%" }
+        }>
           {selectedGridKey && chartResult.traces.length > 0 ? (
             <>
               <div className={styles.chartHeader}>{chartTitle}</div>
@@ -627,6 +614,32 @@ export default function ForecastDashboard({
                 : "Click a grid row to view PBA chart"}
             </div>
           )}
+        </div>
+
+        {/* Grid Panel */}
+        <div className={styles.gridPanel} style={layout.split === "vertical"
+          ? { width: `${100 - layout.chartPct}%`, height: "100%", order: -1 }
+          : { height: `${100 - layout.chartPct}%`, width: "100%" }
+        }>
+          <div className="ag-theme-alpine" style={{ flex: 1 }}>
+            <AgGridReact<JoinedRow>
+              ref={gridRef}
+              rowData={filteredData}
+              columnDefs={columnDefs}
+              defaultColDef={{
+                sortable: true,
+                resizable: true,
+                filter: false,
+              }}
+              rowSelection="single"
+              onGridReady={onGridReady}
+              onRowClicked={onRowClicked}
+              animateRows={false}
+              getRowId={(params) =>
+                params.data.grid_key_local ?? params.data.station
+              }
+            />
+          </div>
         </div>
       </div>
 
