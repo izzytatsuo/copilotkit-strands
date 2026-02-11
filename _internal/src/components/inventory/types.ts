@@ -45,6 +45,7 @@ export interface JoinedRow {
   mnr_expected: string | null;
   mnr_received: string | null;
   vovi_modified_user: string | null;
+  vovi_timestamp_ct: string | null;
   vovi_proposed_cap: string | null;
   vovi_post_cutoff_adjustment: string | null;
   vovi_adjusted_forecast: string | null;
