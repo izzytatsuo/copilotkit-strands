@@ -13,8 +13,12 @@
 |-----------|----------|-------------|
 | `tz_bucket` | **Yes** | Timezone bucket (Eastern, Central, Mountain, Pacific, etc.) |
 | `biz` | No | Business line (default: AMZL) |
+| `vovi_start_utc` | No | VOVI modified_time filter start, UTC epoch ms (default: now — filters all VOVI) |
+| `vovi_end_utc` | No | VOVI modified_time filter end, UTC epoch ms (default: now — filters all VOVI) |
 
 **If tz_bucket is not provided, ask the user which timezone bucket to run.**
+
+> **Note:** By default, forecast_setup filters out all VOVI data (start=end=now). This is intentional for pre-publish review. To include VOVI, pass explicit `vovi_start_utc` / `vovi_end_utc` epoch ms values.
 
 ---
 
