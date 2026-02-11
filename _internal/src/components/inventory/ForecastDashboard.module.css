@@ -69,6 +69,28 @@
   margin-left: 4px;
 }
 
+.exportBtn {
+  margin-left: auto;
+  padding: 4px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  color: #495057;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.exportBtn:hover {
+  background: #e9ecef;
+}
+
+.exportBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .splitContainer {
   display: flex;
   flex: 1;

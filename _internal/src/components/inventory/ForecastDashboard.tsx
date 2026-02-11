@@ -547,6 +547,13 @@ export default function ForecastDashboard({
             </button>
           ))}
         </div>
+        <button
+          className={styles.exportBtn}
+          onClick={() => gridApi?.exportDataAsCsv({ fileName: `forecast_${activeTab}.csv` })}
+          disabled={!gridApi}
+        >
+          Export CSV
+        </button>
       </div>
 
       {/* Split: Grid (40%) | Chart (60%) */}
