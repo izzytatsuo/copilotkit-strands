@@ -62,6 +62,7 @@ export default function DashboardPage() {
 interface LayoutConfig {
   split: "horizontal" | "vertical";
   chartPct: number;
+  gridPosition?: "top" | "bottom";
 }
 
 function DashboardContent({ themeColor }: { themeColor: string }) {
@@ -81,11 +82,13 @@ function DashboardContent({ themeColor }: { themeColor: string }) {
     parameters: [
       { name: "split", description: "Layout direction: 'horizontal' (chart top, grid bottom) or 'vertical' (chart right, grid left)", required: false },
       { name: "chart_pct", description: "Chart panel size as percentage (10-90)", required: false },
+      { name: "grid_position", description: "Grid position: 'top' or 'bottom' (default bottom)", required: false },
     ],
-    handler({ split, chart_pct }: { split?: string; chart_pct?: number }) {
+    handler({ split, chart_pct, grid_position }: { split?: string; chart_pct?: number; grid_position?: string }) {
       setLayout((prev) => ({
         split: split === "vertical" ? "vertical" : split === "horizontal" ? "horizontal" : prev.split,
         chartPct: chart_pct != null ? Math.max(10, Math.min(90, chart_pct)) : prev.chartPct,
+        gridPosition: grid_position === "top" ? "top" : grid_position === "bottom" ? "bottom" : prev.gridPosition,
       }));
     },
   });

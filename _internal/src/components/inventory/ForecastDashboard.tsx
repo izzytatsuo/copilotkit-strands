@@ -23,17 +23,16 @@ const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 // ── Column Definitions ────────────────────────────────────────────────
 
 const columnDefs: ColDef<JoinedRow>[] = [
-  { field: "station", headerName: "Station", width: 80, minWidth: 80, maxWidth: 80, pinned: "left" },
+  { field: "station", headerName: "Station", width: 100, minWidth: 60, pinned: "left" },
   {
     field: "cpts_local",
     headerName: "CPT",
-    width: 80,
-    minWidth: 80,
-    maxWidth: 80,
+    width: 90,
+    minWidth: 60,
     pinned: "left",
     valueFormatter: (params) => params.value ? String(params.value).slice(0, 5) : "",
   },
-  { field: "flags", headerName: "Flags", width: 110, minWidth: 110, maxWidth: 110, pinned: "left" },
+  { field: "flags", headerName: "Flags", width: 140, minWidth: 60, pinned: "left" },
   { field: "available_inputs", headerName: "Inputs", width: 90 },
   { field: "automated_confidence", headerName: "Confidence", width: 100 },
   { field: "setup_automated_confidence", headerName: "Setup Conf", width: 100 },
@@ -151,7 +150,7 @@ function buildTraces(pbaData: PbaRow[], gridKey: string): BuildResult {
         mode: "lines",
         visible: cfg.hidden ? "legendonly" : true,
         line: {
-          color: pbaType === "match" ? "#4DB6AC" : cfg.color,
+          color: pbaType === "match" ? "#e74c3c" : cfg.color,
           dash: cfg.dash ?? "solid",
           width: cfg.isCap ? 1.5 : 2,
         },
@@ -225,7 +224,7 @@ function buildTraces(pbaData: PbaRow[], gridKey: string): BuildResult {
           showlegend: true,
           type: "scatter",
           mode: "lines",
-          line: { color: "#1565C0", width: 2, dash: "solid" },
+          line: { color: "rgba(21,101,192,0.45)", width: 2, dash: "solid" },
         });
 
         // Cumulative median adjusted line
@@ -238,7 +237,7 @@ function buildTraces(pbaData: PbaRow[], gridKey: string): BuildResult {
           type: "scatter",
           mode: "lines",
           visible: "legendonly",
-          line: { color: "#1565C0", width: 2, dash: "solid" },
+          line: { color: "rgba(21,101,192,0.45)", width: 2, dash: "solid" },
         });
       }
     }
@@ -311,6 +310,7 @@ function parseGridCsv(text: string): JoinedRow[] {
 interface LayoutConfig {
   split: "horizontal" | "vertical";
   chartPct: number;
+  gridPosition?: "top" | "bottom";
 }
 
 interface ForecastDashboardProps {
@@ -533,36 +533,6 @@ export default function ForecastDashboard({
 
   return (
     <div className={styles.wrapper}>
-      {/* Toolbar: search + tabs */}
-      <div className={styles.toolbar}>
-        <input
-          className={styles.searchInput}
-          type="text"
-          placeholder=""
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-        <div className={styles.tabs}>
-          {tabGroups.map((tg) => (
-            <button
-              key={tg.value}
-              className={`${styles.tab} ${activeTab === tg.value ? styles.tabActive : ""}`}
-              onClick={() => setActiveTab(tg.value)}
-            >
-              {tg.label}
-              <span className={styles.tabCount}>({tg.count})</span>
-            </button>
-          ))}
-        </div>
-        <button
-          className={styles.exportBtn}
-          onClick={() => gridApi?.exportDataAsCsv({ fileName: `forecast_${activeTab}.csv` })}
-          disabled={!gridApi}
-        >
-          Export CSV
-        </button>
-      </div>
-
       {/* Split: Chart + Grid */}
       <div className={styles.splitContainer} style={{ flexDirection: layout.split === "vertical" ? "row" : "column" }}>
         {/* Chart Panel */}
@@ -619,9 +589,38 @@ export default function ForecastDashboard({
         {/* Grid Panel */}
         <div className={styles.gridPanel} style={layout.split === "vertical"
           ? { width: `${100 - layout.chartPct}%`, height: "100%", order: -1 }
-          : { height: `${100 - layout.chartPct}%`, width: "100%" }
+          : { height: `${100 - layout.chartPct}%`, width: "100%", ...(layout.gridPosition === "top" ? { order: -1 } : {}) }
         }>
-          <div className="ag-theme-alpine" style={{ flex: 1 }}>
+          {/* Toolbar: search + tabs */}
+          <div className={styles.toolbar}>
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder=""
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+            <div className={styles.tabs}>
+              {tabGroups.map((tg) => (
+                <button
+                  key={tg.value}
+                  className={`${styles.tab} ${activeTab === tg.value ? styles.tabActive : ""}`}
+                  onClick={() => setActiveTab(tg.value)}
+                >
+                  {tg.label}
+                  <span className={styles.tabCount}>({tg.count})</span>
+                </button>
+              ))}
+            </div>
+            <button
+              className={styles.exportBtn}
+              onClick={() => gridApi?.exportDataAsCsv({ fileName: `forecast_${activeTab}.csv` })}
+              disabled={!gridApi}
+            >
+              Export CSV
+            </button>
+          </div>
+          <div className="ag-theme-alpine" style={{ flex: 1, fontSize: 16 }}>
             <AgGridReact<JoinedRow>
               ref={gridRef}
               rowData={filteredData}

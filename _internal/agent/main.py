@@ -96,7 +96,7 @@ def set_theme_color(theme_color: str):
 
 
 @tool
-def update_layout(split: str = "horizontal", chart_pct: int = 45):
+def update_layout(split: str = "horizontal", chart_pct: int = 45, grid_position: str = "bottom"):
     """Update the dashboard layout.
 
     This is a frontend tool - it returns None as the actual
@@ -105,6 +105,7 @@ def update_layout(split: str = "horizontal", chart_pct: int = 45):
     Args:
         split: Layout direction - 'horizontal' (chart top, grid bottom) or 'vertical' (chart right, grid left)
         chart_pct: Chart panel size as percentage (10-90), remainder goes to grid
+        grid_position: Grid position - 'top' or 'bottom' (default bottom). Only applies to horizontal split.
     """
     return None
 
